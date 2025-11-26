@@ -12,3 +12,6 @@ sympy==1.14.0
     #   sympy-latex-parser
 sympy-latex-parser==1.9.0
     # via ma1522-linear-algebra (pyproject.toml)
+fastapi
+uvicorn
+python-multipart

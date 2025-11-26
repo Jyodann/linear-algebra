@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Algebra Studio</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Linear Algebra <span class="highlight">Studio</span></h1>
+            <p>Advanced Symbolic Matrix Operations</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <div class="input-wrapper">
+                    <label>Input Matrix</label>
+                    <div class="matrix-controls">
+                        <div class="dimension-control">
+                            <label for="rows">Rows:</label>
+                            <input type="number" id="rows" value="2" min="1" max="10">
+                        </div>
+                        <div class="dimension-control">
+                            <label for="cols">Cols:</label>
+                            <input type="number" id="cols" value="2" min="1" max="10">
+                        </div>
+                        <button id="updateGridBtn" class="secondary-btn">Update Grid</button>
+                        <button id="clearGridBtn" class="secondary-btn">Clear</button>
+                    </div>
+
+                    <div id="matrixGrid" class="matrix-grid">
+                        <!-- Grid items will be generated here -->
+                    </div>
+
+                    <div class="text-input-toggle">
+                        <button id="toggleInputMode" class="text-link">Switch to Text/LaTeX Input</button>
+                    </div>
+
+                    <div id="textInputArea" class="hidden">
+                        <textarea id="matrixInput" placeholder="Enter matrix (e.g., [[1, 2], [3, 4]] or LaTeX)"
+                            spellcheck="false"></textarea>
+                        <div class="helper-text">Supports Python lists, MATLAB style, or LaTeX</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="controls-section">
+                <div class="button-grid">
+                    <button class="op-btn" data-op="rref">RREF</button>
+                    <button class="op-btn" data-op="det">Determinant</button>
+                    <button class="op-btn" data-op="inv">Inverse</button>
+                    <button class="op-btn" data-op="eigenvals">Eigenvalues</button>
+                    <button class="op-btn" data-op="eigenvects">Eigenvectors</button>
+                    <button class="op-btn" data-op="diagonalize">Diagonalize</button>
+                    <button class="op-btn" data-op="lu">LU Decomp</button>
+                    <button class="op-btn" data-op="qr">QR Decomp</button>
+                    <button class="op-btn" data-op="svd">SVD</button>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button id="equivBtn" class="op-btn"
+                        style="width: 100%; background-color: var(--accent); color: white; border-color: var(--accent);">
+                        Show Equivalent Statements
+                    </button>
+                </div>
+            </section>
+
+            <section class="output-section">
+                <div class="output-header">
+                    <h2>Result</h2>
+                    <span id="status" class="status">Ready</span>
+                </div>
+                <div id="resultDisplay" class="result-box">
+                    <div class="placeholder-text">Result will appear here...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Equivalent Statements -->
+    <div id="equivModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="equivCategory">Category</h2>
+            <div id="equivProperties" class="equiv-properties"></div>
+            <ul id="equivList" class="equiv-list"></ul>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
