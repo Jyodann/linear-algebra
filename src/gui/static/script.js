@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.placeholder = '0';
                 input.dataset.row = i;
                 input.dataset.col = j;
+                if (j === cols - 1) {
+                    input.classList.add('last-col');
+                }
 
                 // Dynamic Resizing
                 input.addEventListener('input', () => {
@@ -78,6 +81,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 matrixGrid.appendChild(input);
             }
         }
+    }
+
+    // Projection Hover Effect
+    const projectionBtn = document.querySelector('button[data-op="projection"]');
+    const projectionHelp = document.getElementById('projectionHelp');
+
+    if (projectionBtn) {
+        projectionBtn.addEventListener('mouseenter', () => {
+            matrixGrid.classList.add('show-augmented');
+            if (projectionHelp) projectionHelp.classList.add('visible');
+        });
+        projectionBtn.addEventListener('mouseleave', () => {
+            matrixGrid.classList.remove('show-augmented');
+            if (projectionHelp) projectionHelp.classList.remove('visible');
+        });
     }
 
     function getMatrixFromGrid() {

@@ -147,6 +147,56 @@ header p {
 /* Dynamic width class to be toggled via JS if needed, 
    but for now we'll rely on JS setting style.width */
 
+/* Augmented Matrix Visualization */
+.matrix-grid.show-augmented {
+    gap: 0.8rem;
+    /* Keep gap consistent */
+}
+
+.matrix-grid.show-augmented .grid-cell.last-col {
+    border-left: 3px solid var(--accent);
+    background-color: rgba(56, 189, 248, 0.1);
+    /* Light blue tint */
+    position: relative;
+}
+
+/* Add a pseudo-element to label the last column as 'b' */
+.matrix-grid.show-augmented .grid-cell.last-col[data-row="0"]::before {
+    content: "b";
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Add a pseudo-element to label the first column as 'A' */
+.matrix-grid.show-augmented .grid-cell[data-col="0"][data-row="0"]::before {
+    content: "A";
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-secondary);
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+#projectionHelp {
+    min-height: 1.5em;
+    /* Reserve space */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    /* Prevent interaction when invisible */
+}
+
+#projectionHelp.visible {
+    opacity: 1;
+}
+
 .text-link {
     background: none;
     border: none;

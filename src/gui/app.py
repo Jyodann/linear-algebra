@@ -82,6 +82,18 @@ async def process_matrix(request: Request):
         elif operation == "qr":
             Q, R = mat.QRdecomposition()
             result = f"$$ Q = {sym.latex(Q)}, \\quad R = {sym.latex(R)} $$"
+        elif operation == 'projection':
+            if mat.cols < 2:
+                 return JSONResponse(content={"error": "Matrix must have at least 2 columns (Augmented [A|b])"}, status_code=400)
+            
+            # Split into A and b (last column is b)
+            A = mat.select_cols(*range(mat.cols - 1))
+            b = mat.select_cols(mat.cols - 1)
+            
+            x_hat = A.solve_least_squares(b)
+            p = A @ x_hat
+            
+            result = f"$$ \\text{{Least Squares Solution }} \\hat{{x}} = {sym.latex(x_hat)} \\\\ \\\\ \\text{{Projection }} p = {sym.latex(p)} $$"
         elif operation == "svd":
             U, S, V_T = mat.singular_value_decomposition()
             result = f"$$ U = {sym.latex(U)}, \\quad S = {sym.latex(S)}, \\quad V^T = {sym.latex(V_T)} $$"

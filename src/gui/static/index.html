@@ -43,6 +43,11 @@
                         <!-- Grid items will be generated here -->
                     </div>
 
+                    <div id="projectionHelp" class="helper-text"
+                        style="color: var(--accent); text-align: center; margin-bottom: 0.5rem;">
+                        For Projection: Input Augmented Matrix [A|b] (Last column is b)
+                    </div>
+
                     <div class="text-input-toggle">
                         <button id="toggleInputMode" class="text-link">Switch to Text/LaTeX Input</button>
                     </div>
@@ -66,6 +71,7 @@
                     <button class="op-btn" data-op="lu">LU Decomp</button>
                     <button class="op-btn" data-op="qr">QR Decomp</button>
                     <button class="op-btn" data-op="svd">SVD</button>
+                    <button class="op-btn" data-op="projection">Projection</button>
                 </div>
                 <div style="margin-top: 1rem;">
                     <button id="equivBtn" class="op-btn"
