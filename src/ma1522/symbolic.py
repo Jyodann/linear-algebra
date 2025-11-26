@@ -704,6 +704,15 @@ class Matrix(sym.MutableDenseMatrix):
 
     # Override
     @property
+    def H(self):
+        """Returns the Hermitian transpose (conjugate transpose) of the matrix.
+
+        This overrides the default behavior where .H calls .adjoint(), which in this
+        class is overridden to return the adjugate matrix.
+        """
+        return self.T.conjugate()
+
+    @property
     def T(self) -> Matrix:
         return Matrix(super().T)
 
