@@ -1,129 +1,51 @@
-# linear-algebra
+# Linear Algebra Studio
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ma1522-linear-algebra)](https://pypi.org/project/ma1522-linear-algebra/)
-[![PyPI - Version](https://img.shields.io/pypi/v/ma1522-linear-algebra)](https://pypi.org/project/ma1522-linear-algebra/)
-[![GitHub License](https://img.shields.io/github/license/yeeshin504/linear-algebra)](https://github.com/YeeShin504/linear-algebra/blob/master/LICENSE.txt)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/ma1522-linear-algebra)](https://pypistats.org/packages/ma1522-linear-algebra)
+A modern, interactive Web GUI for the [ma1522-linear-algebra](https://github.com/YeeShin504/linear-algebra) library.
 
-## About
+This project provides a user-friendly graphical interface for performing symbolic linear algebra operations, making it accessible to users without Python programming knowledge.
 
-This project builds on SymPy's Matrix class and is designed for students taking NUS MA1522 Linear Algebra for Computing. It has implementations of most of the algorithms taught during the course (as of Sem 1 AY24/25).
+## Credits
 
+**Original Library & Algorithms**: [YeeShin504](https://github.com/YeeShin504) and contributors.
+This project builds upon their robust `ma1522` library to provide the underlying mathematical computations.
 
-### Key Features
+## Features
 
-1. Import matrices directly from $\rm\LaTeX$ or string/list representations.
-2. Step-by-step workings for most algorithms (including LU Factorisation, SVD, QR, diagonalization, and more).
-3. Enhanced symbolic matrix class with:
-  - Matrix creation from lists, $\rm\LaTeX$, or random values.
-  - Matrix decompositions: REF, RREF, LU, QR, SVD, diagonalization.
-  - Vector space operations: orthogonalization, projections, basis manipulation, subspace intersection, and more.
-  - Eigenvalue/eigenvector computations and characteristic polynomials.
-  - Custom pretty-printing and $\rm\LaTeX$ formatting, including augmented matrices.
-  - Support for both exact symbolic and numerical computations.
-  - Utilities for displaying results in Jupyter/IPython or standard Python.
-4. Follows MA1522 syllabus conventions for linear algebra and provides detailed, educational output.
-5. Rich set of custom types for representing decompositions, solutions, and factorizations.
+- **Interactive Matrix Grid**: Input matrices easily using a dynamic grid that resizes automatically.
+- **Symbolic Computation**: exact results for RREF, Determinant, Inverse, Eigenvalues, and more.
+- **Advanced Operations**: Support for SVD (Singular Value Decomposition) and Diagonalization.
+- **Equivalent Statements**: Instantly analyze matrix properties (Rank, Invertibility, etc.) based on the MA1522 syllabus.
+- **Flexible Input**: Supports Python lists, MATLAB syntax, and LaTeX.
+- **Beautiful Output**: Results are rendered in standard mathematical notation using LaTeX.
 
-## Installation and Usage
+## Getting Started
+
+### Prerequisites
+
+- Python 3.10+
 
 ### Installation
 
-#### Prerequisites
-
-This project is best supported in a Jupyter Notebook environment with Python 3.10+. You can download Python from [here](https://www.python.org/downloads/).
-
-
-#### Install Dependencies
-
-It is recommended to use a virtual environment for managing dependencies.
-
-1. Create a virtual environment:
-    ```bash
-    python -m venv venv
-    ```
-
-2. Activate the virtual environment:
-    - On Windows:
-      ```bash
-      venv\Scripts\activate
-      ```
-    - On macOS/Linux:
-      ```bash
-      source venv/bin/activate
-      ```
-
-3. Install the library:
-    ```bash
-    pip install ma1522-linear-algebra
-    ```
-   It is recommended to use a Jupyter Notebook environment to run the code.
-   ```bash
-   pip install notebook
-   ```
-    pip install notebook
-    ```
-
-### Web GUI
-
-For users who prefer a graphical interface, this project includes a modern Web GUI.
-
-#### Running the GUI
-
-1.  Install the required dependencies:
+1.  Clone this repository.
+2.  Install the dependencies:
     ```bash
     pip install -r requirements.txt
     ```
 
-2.  Start the server:
+### Running the GUI
+
+1.  Start the local server:
     ```bash
     # From the project root directory
     export PYTHONPATH=$PYTHONPATH:$(pwd)/src && python3 -m uvicorn src.gui.app:app --reload
     ```
 
-3.  Open your browser and navigate to:
+2.  Open your web browser and navigate to:
     [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-#### Features
-- **Interactive Grid Input**: Easily input matrices with dynamic resizing.
-- **Symbolic Operations**: RREF, Determinant, Inverse, Eigenvalues, SVD, and more.
-- **Equivalent Statements**: Analyze matrix properties based on MA1522 syllabus.
-- **LaTeX Support**: View results in beautiful mathematical notation.
+## Usage
 
-### Usage
-
-Create a Jupyter Notebook `test.ipynb`. Within the notebook, run the following code.
-```python
-from ma1522 import *
-
-# Create Matrix objects
-A = Matrix([[1, 2, 3],
-            [4, 5, 5],
-            [7, 8, 9]])
-
-b = Matrix([[1], 
-            [2], 
-            [3]])
-
-# Join matrices along the columns via `row_join`. 
-augmented_matrix = A.aug_line().row_join(b)
-
-# `aug_line` adds a visual line that can be seen using `display`
-display(augmented_matrix)
-
-# Solution to the matrix equation Ax = b can be found using `solve`.
-A.solve(rhs=b)
-
-# Alternatively, the full steps with LU Factorisation can be found using `ref` with the appropriate options.
-augmented_matrix.ref(verbosity=2)
-```
-
-Documentation of more functions can be found [here](https://yeeshin504.github.io/linear-algebra/api/symbolic).
-
-More usage examples can be found under [tutorials](https://yeeshin504.github.io/linear-algebra/tutorials/tutorial).
-
-Live demonstration of the library can be found [here](https://yeeshin504.github.io/linear-algebra/live/demo).
-
-### Credits
-
-I would like to thank [@DenseLance](https://github.com/DenseLance) for his contributions.
+1.  **Enter a Matrix**: Use the grid to type in numbers or symbolic expressions (e.g., `sqrt(2)`). You can also switch to text mode to paste Python lists.
+2.  **Select an Operation**: Click any button in the control panel (e.g., "RREF", "Eigenvalues", "SVD").
+3.  **View Results**: The result will appear below in formatted LaTeX.
+4.  **Check Properties**: Click "Show Equivalent Statements" to see a categorized list of the matrix's properties.
