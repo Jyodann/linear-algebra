@@ -61,6 +61,34 @@ It is recommended to use a virtual environment for managing dependencies.
    ```bash
    pip install notebook
    ```
+    pip install notebook
+    ```
+
+### Web GUI
+
+For users who prefer a graphical interface, this project includes a modern Web GUI.
+
+#### Running the GUI
+
+1.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  Start the server:
+    ```bash
+    # From the project root directory
+    export PYTHONPATH=$PYTHONPATH:$(pwd)/src && python3 -m uvicorn src.gui.app:app --reload
+    ```
+
+3.  Open your browser and navigate to:
+    [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+#### Features
+- **Interactive Grid Input**: Easily input matrices with dynamic resizing.
+- **Symbolic Operations**: RREF, Determinant, Inverse, Eigenvalues, SVD, and more.
+- **Equivalent Statements**: Analyze matrix properties based on MA1522 syllabus.
+- **LaTeX Support**: View results in beautiful mathematical notation.
 
 ### Usage
 
