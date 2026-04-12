@@ -221,7 +221,38 @@ def display(*args, opt: Literal["math", "dict"] | None = None, **kwargs) -> None
         else:
             IPython.display.display(*args, **kwargs)
     else:
-        sym.pprint(*args, **kwargs)
+        # Non-IPython context (FastAPI / scripts) — emit LaTeX so the GUI can
+        # render it with MathJax rather than printing Unicode box-drawing chars.
+        for arg in args:
+            if opt == "math" and isinstance(arg, str):
+                # ERO label: already a raw LaTeX string, emit as inline math
+                print(f"\\({arg}\\)")
+            elif opt == "dict":
+                if isinstance(arg, dict):
+                    from sympy.printing.latex import LatexPrinter
+                    printer = kwargs.pop("printer", LatexPrinter())
+                    print(f"\\[{_gen_latex_repr_dict(arg, printer=printer)}\\]")
+            elif isinstance(arg, list):
+                # List of SymPy objects (e.g. nullspace() → list of column vectors)
+                # Render each as a column vector and display inside \[ ... \]
+                if not arg:
+                    print("\\[\\emptyset\\]")
+                elif all(hasattr(v, "_latex") or isinstance(v, (sym.Basic, sym.matrices.MatrixBase)) for v in arg):
+                    inner = ", \\quad ".join(sym.latex(v) for v in arg)
+                    print(f"\\[{inner}\\]")
+                else:
+                    print(str(arg))
+            elif isinstance(arg, tuple) and len(arg) >= 1 and (
+                hasattr(arg[0], "_latex") or isinstance(arg[0], (sym.Basic, sym.matrices.MatrixBase))
+            ):
+                # RREF namedtuple / plain tuple — display the matrix part (index 0)
+                print(f"\\[{sym.latex(arg[0])}\\]")
+            elif hasattr(arg, "_latex") or isinstance(arg, (sym.Basic, sym.matrices.MatrixBase)):
+                # SymPy matrix / expression — emit as display math
+                print(f"\\[{sym.latex(arg)}\\]")
+            else:
+                # Plain string or unknown type
+                print(str(arg))
 
 
 def _standardise_symbol(

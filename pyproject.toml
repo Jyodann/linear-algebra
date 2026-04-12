@@ -9,6 +9,9 @@ dependencies = [
     "numpy>=2.0.2",
     "sympy>=1.13.3",
     "sympy-latex-parser>=1.9.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "python-multipart>=0.0.6",
 ]
 
 classifiers = [

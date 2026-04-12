@@ -1,136 +1,59 @@
-# linear-algebra
+# Linear Algebra Studio
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ma1522-linear-algebra)](https://pypi.org/project/ma1522-linear-algebra/)
-[![PyPI - Version](https://img.shields.io/pypi/v/ma1522-linear-algebra)](https://pypi.org/project/ma1522-linear-algebra/)
-[![GitHub License](https://img.shields.io/github/license/yeeshin504/linear-algebra)](https://github.com/YeeShin504/linear-algebra/blob/master/LICENSE.txt)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/ma1522-linear-algebra)](https://pypistats.org/packages/ma1522-linear-algebra)
-[![codecov](https://codecov.io/github/YeeShin504/linear-algebra/graph/badge.svg?token=2TJ7RSIDOI)](https://codecov.io/github/YeeShin504/linear-algebra)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## About
+A modern, interactive Web GUI for the [ma1522-linear-algebra](https://github.com/YeeShin504/linear-algebra) library.
 
-This project builds on SymPy's Matrix class and is designed for students taking NUS MA1522 Linear Algebra for Computing. It has implementations of most of the algorithms taught during the course (as of Sem 1 AY24/25).
+This project provides a beautiful, user-friendly graphical interface for performing symbolic linear algebra computations, making advanced operations accessible without writing any Python code.
 
+## 🌟 Key Features
 
-### Key Features
+### Beautiful Web Interface
+* **Interactive Matrix Editor**: Input matrices using an intuitive grid that dynamically resizes, or use text mode for LaTeX and Python lists.
+* **MathJax Integration**: Outputs are beautifully typeset in LaTeX math notation, rendering complex fractions, roots, and matrices elegantly.
+* **Step-by-Step Solutions**: View detailed breakdown steps for operations like REF, eigenvalues, and diagonalizations.
 
-1. Import matrices directly from $\rm\LaTeX$ or string/list representations.
-2. Step-by-step workings for most algorithms (including LU Factorisation, SVD, QR, diagonalization, and more).
-3. Enhanced symbolic matrix class with:
-    - Matrix creation from lists, $\rm\LaTeX$, or random values.
-    - Matrix decompositions: REF, RREF, LU, QR, SVD, diagonalization.
-    - Vector space operations: orthogonalization, projections, basis manipulation, subspace intersection, and more.
-    - Eigenvalue/eigenvector computations and characteristic polynomials.
-    - Custom pretty-printing and $\rm\LaTeX$ formatting, including augmented matrices.
-    - Support for both exact symbolic and numerical computations.
-    - Utilities for displaying results in Jupyter/IPython or standard Python.
-4. Follows MA1522 syllabus conventions for linear algebra and provides detailed, educational output.
-5. Rich set of custom types for representing decompositions, solutions, and factorizations.
+### Powerful Symbolic Engine
+* **Core Algorithms**: Computes REF, RREF, LU Factorization, QR Factorization, SVD, and Diagonalization purely symbolically (yielding exact answers).
+* **Vector Spaces**: Calculate orthogonal complements, intersections, projections, and transition matrices.
+* **Equivalent Statements**: Instantly analyze matrix properties (invertibility, rank, nullity, etc.) against the MA1522 syllabus checklist.
+* **Safe & Asynchronous**: Heavy operations use background threading and timeout controls to keep the UI fluid and prevent server lockups.
 
-## Installation and Usage
+## 🚀 Getting Started
+
+This project is built using modern Python tooling and highly optimized for speed.
+
+### Prerequisites
+* **Python 3.10+**
+* **uv** (recommended Python package manager. [Install uv here](https://docs.astral.sh/uv/getting-started/installation/))
 
 ### Installation
 
-#### Prerequisites
-
-This project is best supported in a Jupyter Notebook environment with Python 3.10+. You can download Python from [here](https://www.python.org/downloads/).
-
-Alternatively, you can use a minimal GUI developed by [@MarcusMa06-code](https://github.com/MarcusMa06-code) [here](https://github.com/MarcusMa06-code/linear-algebra/tree/gui-development).
-
-#### Install Dependencies
-
-It is recommended to use a virtual environment for managing dependencies.
-
-1. Create a virtual environment:
-    ```bash
-    python -m venv venv
-    ```
-
-2. Activate the virtual environment:
-    - On Windows:
-      ```bash
-      venv\Scripts\activate
-      ```
-    - On macOS/Linux:
-      ```bash
-      source venv/bin/activate
-      ```
-
-3. Install the library:
-    ```bash
-    pip install ma1522-linear-algebra
-    ```
-   It is recommended to use a Jupyter Notebook environment to run the code.
-   ```bash
-   pip install notebook
-   ```
-
-### Usage
-
-Create a Jupyter Notebook `test.ipynb`. Within the notebook, run the following code.
-```python
-from ma1522 import *
-
-# Create Matrix objects
-A = Matrix([[1, 2, 3],
-            [4, 5, 5],
-            [7, 8, 9]])
-
-b = Matrix([[1], 
-            [2], 
-            [3]])
-
-# Join matrices along the columns via `row_join`. 
-augmented_matrix = A.aug_line().row_join(b)
-
-# `aug_line` adds a visual line that can be seen using `display`
-display(augmented_matrix)
-
-# Solution to the matrix equation Ax = b can be found using `solve`.
-A.solve(rhs=b)
-
-# Alternatively, the full steps with LU Factorisation can be found using `ref` with the appropriate options.
-augmented_matrix.ref(verbosity=2)
-```
-
-Documentation of more functions can be found [here](https://yeeshin504.github.io/linear-algebra/api/symbolic).
-
-More usage examples can be found under [tutorials](https://yeeshin504.github.io/linear-algebra/tutorials/tutorial).
-
-Live demonstration of the library can be found [here](https://yeeshin504.github.io/linear-algebra/live/demo).
-
-### Offline Documentation
-
-An offline version of the documentation is available for download from the [Releases](https://github.com/YeeShin504/linear-algebra/releases) page. This is useful for exam when you may not have internet access.
-
-To use the offline documentation:
-
-1. Download `linear-algebra-docs-offline.zip` from the latest release
-2. Extract the ZIP to a folder
-3. Open `index.html` in your browser
-
-#### Building from Source
-
-If the offline ZIP is not available in the releases, you can build it yourself:
-
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YeeShin504/linear-algebra.git
+   git clone git@github.com:Tuxedolphin/linear-algebra.git
    cd linear-algebra
    ```
 
-2. Install documentation dependencies:
+2. Establish dependencies:
    ```bash
-   pip install mkdocs-material mkdocs-jupyter
+   # uv will automatically create a virtual environment and install dependencies
+   uv sync
    ```
 
-3. Build the documentation:
-   ```bash
-   mkdocs build
-   ```
+### Running the Application
 
-4. The documentation will be in the `site/` folder. Open `site/index.html` in your browser.
+Start the local FastAPI development server:
 
+```bash
+# Run from the root directory to ensure imports resolve
+PYTHONPATH=src uv run uvicorn src.gui.app:app --port 8000 --reload
+```
 
-### Credits
+Finally, open your browser and navigate to: [http://localhost:8000](http://localhost:8000)
 
-I would like to thank [@DenseLance](https://github.com/DenseLance) for his contributions.
+## 🤝 Credits
+
+**Original Library & Core Algorithms**: Developed by [YeeShin504](https://github.com/YeeShin504) and contributors.
+This repository extends their robust symbolic `ma1522` engine with a rich local frontend suite.
