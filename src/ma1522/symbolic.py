@@ -1717,7 +1717,7 @@ class Matrix(sym.MutableDenseMatrix):
 
         return list(sym.ordered(dict(combination) for combination in combinations))
 
-    def evaluate_cases(self, rhs: Matrix | None = None, use_ref: bool = True) -> None:
+    def evaluate_cases(self, rhs: Matrix | None = None, use_ref: bool = False) -> None:
         """
         Evaluates and displays all possible cases for solutions to a linear system involving the matrix.
 
@@ -1728,7 +1728,8 @@ class Matrix(sym.MutableDenseMatrix):
         Args:
             rhs (Matrix, optional): The right-hand side matrix of the system. If not provided, it treats the system
                 as homogeneous (i.e., `Ax = 0`).
-            use_ref (bool, optional): Whether to use the row echelon form (REF) for case analysis. Defaults to True.
+            use_ref (bool, optional): Whether to use the row echelon form (REF) for case analysis instead of RREF.
+                Defaults to False. When True, falls back to RREF if REF cannot be computed.
 
         Returns:
             None
@@ -1742,8 +1743,8 @@ class Matrix(sym.MutableDenseMatrix):
             Case 1: {}, not including [{x: 0}]
             Unique solution
             RREF(rref=Matrix([
-                [x, 1 | 2]
-                [0, 1 | 3]
+                [1, 0 | -1/x]
+                [0, 1 |     3]
             ]), pivots=(0, 1))
             <BLANKLINE>
             <BLANKLINE>
@@ -1769,10 +1770,27 @@ class Matrix(sym.MutableDenseMatrix):
             )
             U = self.row_join(rhs, aug_line=True).subs(case)
             if use_ref:
-                U = U.ref(verbosity=0, follow_GE=False).U
-                pivots = [pos[1] for pos in U.get_pivot_pos()]
+                try:
+                    import warnings
+                    ref_U = None
+                    with warnings.catch_warnings(record=True) as caught:
+                        warnings.simplefilter("always")
+                        ref_U = U.ref(verbosity=0, follow_GE=False).U
+                    # Fall back to RREF if REF produced a warning or is not in echelon form
+                    if caught or not ref_U.is_echelon:
+                        raise ValueError("REF did not converge")
+                    U = ref_U
+                    pivots = [pos[1] for pos in U.get_pivot_pos()]
+                except Exception:
+                    import warnings as _warnings
+                    with _warnings.catch_warnings():
+                        _warnings.simplefilter("ignore", UserWarning)
+                        U, pivots = U.rref(pivots=True)
             else:
-                U, pivots = U.rref(pivots=True)
+                import warnings as _warnings
+                with _warnings.catch_warnings():
+                    _warnings.simplefilter("ignore", UserWarning)
+                    U, pivots = U.rref(pivots=True)
             if self.cols in pivots:  # type: ignore
                 print("No solution")
             else:
@@ -1814,6 +1832,15 @@ class Matrix(sym.MutableDenseMatrix):
             [0, 0,  0]
             ]), pivots=(0, 1))
         """
+        if self.free_symbols:
+            warn(
+                "Matrix contains free symbols. The RREF result assumes all symbolic "
+                "expressions acting as pivots are non-zero, which may not hold for all "
+                "values of the variables. Use evaluate_cases() for a case-by-case analysis.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         if pivots:
             rref_mat, pivot_pos = super().rref(*args, **kwargs)
         else:
@@ -2195,7 +2222,10 @@ class Matrix(sym.MutableDenseMatrix):
         if use_ref:
             res = M.ref().U
         else:
-            res = M.rref(pivots=False)
+            import warnings as _warnings
+            with _warnings.catch_warnings():
+                _warnings.simplefilter("ignore", UserWarning)
+                res = M.rref(pivots=False)
 
         visible_cols = (*range(self.cols), -1)
         res_matrix = res.select_cols(*visible_cols).aug_line(-2)  # type: ignore
@@ -3493,23 +3523,29 @@ class Matrix(sym.MutableDenseMatrix):
             print("Characteristic Polynomial")
             poly = self.cpoly()
             display(poly)
-            for root, _ in sym.roots(poly).items():
-                if root.is_real:
-                    display(
-                        _textify("Before RREF: ")
-                        + sym.latex(root)
-                        + r"\mathbb{I} - \mathrm{self}",
-                        opt="math",
-                    )
-                    expr = root * self.elem() - self
-                    display(expr)
+            import warnings as _warnings
+            for root, _ in self.eigenvals().items():
+                if reals_only and not root.is_real:
+                    continue
+                display(
+                    _textify("Before RREF: ")
+                    + sym.latex(root)
+                    + r"\mathbb{I} - \mathrm{self}",
+                    opt="math",
+                )
+                expr = root * self.elem() - self
+                display(expr)
 
-                    print("\nAfter RREF:")
+                print("\nAfter RREF:")
+                with _warnings.catch_warnings():
+                    _warnings.simplefilter("ignore", UserWarning)
                     display(expr.rref())
 
-                    print("\nEigenvectors:")
+                print("\nEigenvectors:")
+                with _warnings.catch_warnings():
+                    _warnings.simplefilter("ignore", UserWarning)
                     display(expr.nullspace())
-                    print("\n")
+                print("\n")
 
         P, D = super().diagonalize(reals_only, *args, **kwargs)
         P.rm_aug_line()  # Remove augmented line if exists
