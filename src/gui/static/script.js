@@ -338,11 +338,27 @@ function setStatus(state_) {
    Result & steps rendering
    ───────────────────────────────────────────────────────────────────────── */
 
-function renderResult(html) {
+/** Show shimmer skeleton while computing; hides the result display. */
+function showShimmer() {
+  const shimmer = $('answerShimmer');
+  if (shimmer) shimmer.classList.remove('hidden');
+  els.resultDisplay.classList.add('hidden');
+  els.resultDisplay.innerHTML = '';
+}
+
+/** Hide shimmer skeleton and reveal the result display. */
+function hideShimmer() {
+  const shimmer = $('answerShimmer');
+  if (shimmer) shimmer.classList.add('hidden');
+  els.resultDisplay.classList.remove('hidden');
+}
+
+async function renderResult(html) {
   els.resultDisplay.innerHTML = html;
   if (window.MathJax && MathJax.typesetPromise) {
-    MathJax.typesetPromise([els.resultDisplay]).catch(console.error);
+    await MathJax.typesetPromise([els.resultDisplay]).catch(console.error);
   }
+  hideShimmer();
 }
 
 function renderSteps(html) {
@@ -390,7 +406,7 @@ async function runOperation(op, needs) {
   els.opLabel.textContent = OP_LABELS[op] || op;
   setStatus('computing');
   clearSteps();
-  renderResult('<p class="placeholder">Computing…</p>');
+  showShimmer();
 
   // Show / hide secondary input
   showSecondary(needs || null);
@@ -401,7 +417,7 @@ async function runOperation(op, needs) {
   const matA = getMatrixA();
   if (!matA) {
     setStatus('error');
-    renderResult('<div class="error-message">Matrix A is empty.</div>');
+    await renderResult('<div class="error-message">Matrix A is empty.</div>');
     return;
   }
   body.matrix = matA;
@@ -431,12 +447,12 @@ async function runOperation(op, needs) {
 
     if (data.error) {
       setStatus('error');
-      renderResult(`<div class="error-message">Error: ${escapeHtml(data.error)}</div>`);
+      await renderResult(`<div class="error-message">Could not compute — ${escapeHtml(data.error)}</div>`);
       return;
     }
 
     setStatus('done');
-    renderResult(data.result || '<span class="placeholder">No result returned.</span>');
+    await renderResult(data.result || '<span class="placeholder">No result returned.</span>');
 
     if (data.steps && data.steps.trim()) {
       renderSteps(data.steps);
@@ -444,13 +460,13 @@ async function runOperation(op, needs) {
   } catch (err) {
     state.currentAbort = null;
     if (err.name === 'AbortError') {
-      // User cancelled — reset cleanly
+      hideShimmer();
+      els.resultDisplay.innerHTML = '<p class="placeholder">Cancelled. Select an operation from the left panel.</p>';
       setStatus('ready');
-      renderResult('<p class="placeholder">Cancelled. Select an operation from the left panel.</p>');
       clearSteps();
     } else {
       setStatus('error');
-      renderResult(`<div class="error-message">Network error: ${escapeHtml(err.message)}</div>`);
+      await renderResult(`<div class="error-message">Network error: ${escapeHtml(err.message)}</div>`);
     }
   }
 }
@@ -467,10 +483,13 @@ async function openEquivModal() {
   }
 
   // Reset modal content
-  els.equivCategory.textContent = 'Loading…';
+  els.equivCategory.textContent = 'Loading\u2026';
   els.equivProps.innerHTML = '';
   els.equivList.innerHTML = '';
+
+  // Show modal with animation
   els.equivModal.classList.remove('hidden');
+  requestAnimationFrame(() => els.equivModal.classList.add('modal-visible'));
 
   try {
     const resp = await fetch('/api/equivalent', {
@@ -519,7 +538,8 @@ async function openEquivModal() {
 }
 
 function closeEquivModal() {
-  els.equivModal.classList.add('hidden');
+  els.equivModal.classList.remove('modal-visible');
+  setTimeout(() => els.equivModal.classList.add('hidden'), 200);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
