@@ -106,12 +106,36 @@ function createGrid(containerId, rows, cols) {
       input.autocomplete = 'off';
       input.spellcheck = false;
 
-      // Tab navigation: move right across the row, then down
+      // Navigation: Enter moves down, arrows move in all 4 directions
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
           e.preventDefault();
           const next = container.querySelector(
             `[data-row="${r + 1}"][data-col="${c}"]`
+          );
+          if (next) next.focus();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const next = container.querySelector(
+            `[data-row="${r}"][data-col="${c + 1}"]`
+          );
+          if (next) next.focus();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const next = container.querySelector(
+            `[data-row="${r}"][data-col="${c - 1}"]`
+          );
+          if (next) next.focus();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const next = container.querySelector(
+            `[data-row="${r + 1}"][data-col="${c}"]`
+          );
+          if (next) next.focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const next = container.querySelector(
+            `[data-row="${r - 1}"][data-col="${c}"]`
           );
           if (next) next.focus();
         }
@@ -328,10 +352,12 @@ function renderSteps(html) {
   // Restore collapse state
   if (state.stepsCollapsed) {
     els.stepsBody.classList.add('hidden');
-    els.toggleStepsLabel.textContent = '\u25b8 Expand';
+    els.toggleStepsLabel.textContent = 'Show steps';
+    els.toggleSteps.setAttribute('aria-expanded', 'false');
   } else {
     els.stepsBody.classList.remove('hidden');
-    els.toggleStepsLabel.textContent = '\u25be Collapse';
+    els.toggleStepsLabel.textContent = 'Hide steps';
+    els.toggleSteps.setAttribute('aria-expanded', 'true');
   }
 
   if (window.MathJax && MathJax.typesetPromise) {
@@ -513,10 +539,35 @@ function escapeHtml(str) {
    ───────────────────────────────────────────────────────────────────────── */
 
 function init() {
-  // 1. Apply op-group colors from data-color attribute (CSS attr() not yet
-  //    supported for custom properties in all browsers)
+  // 1. Apply op-group colors and wire accordion toggle with localStorage
   document.querySelectorAll('.op-group').forEach(g => {
     g.style.setProperty('--group-color', g.dataset.color);
+
+    const header = g.querySelector('.group-header');
+    const body   = g.querySelector('.group-body');
+    if (!header || !body) return;
+
+    const labelText  = g.querySelector('.group-label')?.textContent.trim() ?? '';
+    const storageKey = `la-studio-op-group-${labelText}`;
+
+    // Restore collapsed state from localStorage
+    if (localStorage.getItem(storageKey) === 'collapsed') {
+      g.classList.add('collapsed');
+      header.setAttribute('aria-expanded', 'false');
+    }
+
+    header.addEventListener('click', () => {
+      const nowCollapsed = g.classList.toggle('collapsed');
+      header.setAttribute('aria-expanded', nowCollapsed ? 'false' : 'true');
+      localStorage.setItem(storageKey, nowCollapsed ? 'collapsed' : 'open');
+    });
+
+    header.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        header.click();
+      }
+    });
   });
 
   // 2. Build Matrix A grid
@@ -551,10 +602,12 @@ function init() {
     state.stepsCollapsed = !state.stepsCollapsed;
     if (state.stepsCollapsed) {
       els.stepsBody.classList.add('hidden');
-      els.toggleStepsLabel.textContent = '\u25b8 Expand';
+      els.toggleStepsLabel.textContent = 'Show steps';
+      els.toggleSteps.setAttribute('aria-expanded', 'false');
     } else {
       els.stepsBody.classList.remove('hidden');
-      els.toggleStepsLabel.textContent = '\u25be Collapse';
+      els.toggleStepsLabel.textContent = 'Hide steps';
+      els.toggleSteps.setAttribute('aria-expanded', 'true');
     }
   });
 
