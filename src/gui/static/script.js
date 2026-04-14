@@ -106,38 +106,35 @@ function createGrid(containerId, rows, cols) {
       input.autocomplete = 'off';
       input.spellcheck = false;
 
-      // Navigation: Enter moves down, arrows move in all 4 directions
+      // Navigation: Enter moves down, arrows move in all 4 directions.
+      // preventDefault only fires when a target exists, so default caret
+      // movement within a cell is preserved at grid boundaries.
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
-          e.preventDefault();
           const next = container.querySelector(
             `[data-row="${r + 1}"][data-col="${c}"]`
           );
-          if (next) next.focus();
+          if (next) { e.preventDefault(); next.focus(); }
         } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
           const next = container.querySelector(
             `[data-row="${r}"][data-col="${c + 1}"]`
           );
-          if (next) next.focus();
+          if (next) { e.preventDefault(); next.focus(); }
         } else if (e.key === 'ArrowLeft') {
-          e.preventDefault();
           const next = container.querySelector(
             `[data-row="${r}"][data-col="${c - 1}"]`
           );
-          if (next) next.focus();
+          if (next) { e.preventDefault(); next.focus(); }
         } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
           const next = container.querySelector(
             `[data-row="${r + 1}"][data-col="${c}"]`
           );
-          if (next) next.focus();
+          if (next) { e.preventDefault(); next.focus(); }
         } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
           const next = container.querySelector(
             `[data-row="${r - 1}"][data-col="${c}"]`
           );
-          if (next) next.focus();
+          if (next) { e.preventDefault(); next.focus(); }
         }
       });
 
@@ -390,12 +387,15 @@ function clearSteps() {
    Core operation handler
    ───────────────────────────────────────────────────────────────────────── */
 
+let _opGeneration = 0;
+
 async function runOperation(op, needs) {
   // Abort any in-flight request
   if (state.currentAbort) {
     state.currentAbort.abort();
     state.currentAbort = null;
   }
+  const myGen = ++_opGeneration;
 
   // Update active state
   document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active'));
@@ -443,6 +443,7 @@ async function runOperation(op, needs) {
     });
 
     state.currentAbort = null;
+    if (myGen !== _opGeneration) return; // superseded by a newer operation
     const data = await resp.json();
 
     if (data.error) {
@@ -460,11 +461,13 @@ async function runOperation(op, needs) {
   } catch (err) {
     state.currentAbort = null;
     if (err.name === 'AbortError') {
-      hideShimmer();
+      if (myGen !== _opGeneration) return; // superseded — let the new op manage shimmer
       els.resultDisplay.innerHTML = '<p class="placeholder">Cancelled. Select an operation from the left panel.</p>';
+      hideShimmer();
       setStatus('ready');
       clearSteps();
     } else {
+      if (myGen !== _opGeneration) return;
       setStatus('error');
       await renderResult(`<div class="error-message">Network error: ${escapeHtml(err.message)}</div>`);
     }
@@ -482,14 +485,20 @@ async function openEquivModal() {
     return;
   }
 
+  // Cancel any pending close animation before reopening
+  clearTimeout(_closeTimer);
+
   // Reset modal content
   els.equivCategory.textContent = 'Loading\u2026';
   els.equivProps.innerHTML = '';
   els.equivList.innerHTML = '';
 
-  // Show modal with animation
+  // Show modal with animation (double-rAF ensures browser flushes display:none
+  // before adding modal-visible, so the CSS transition actually fires)
   els.equivModal.classList.remove('hidden');
-  requestAnimationFrame(() => els.equivModal.classList.add('modal-visible'));
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => els.equivModal.classList.add('modal-visible'))
+  );
 
   try {
     const resp = await fetch('/api/equivalent', {
@@ -537,9 +546,12 @@ async function openEquivModal() {
   }
 }
 
+let _closeTimer = null;
+
 function closeEquivModal() {
+  clearTimeout(_closeTimer);
   els.equivModal.classList.remove('modal-visible');
-  setTimeout(() => els.equivModal.classList.add('hidden'), 200);
+  _closeTimer = setTimeout(() => els.equivModal.classList.add('hidden'), 200);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -567,19 +579,21 @@ function init() {
     const body   = g.querySelector('.group-body');
     if (!header || !body) return;
 
-    const labelText  = g.querySelector('.group-label')?.textContent.trim() ?? '';
-    const storageKey = `la-studio-op-group-${labelText}`;
+    const labelText  = g.querySelector('.group-label')?.textContent.trim() || '';
+    const storageKey = labelText ? `la-studio-op-group-${labelText}` : null;
 
     // Restore collapsed state from localStorage
-    if (localStorage.getItem(storageKey) === 'collapsed') {
+    if (storageKey && localStorage.getItem(storageKey) === 'collapsed') {
       g.classList.add('collapsed');
       header.setAttribute('aria-expanded', 'false');
+    } else {
+      header.setAttribute('aria-expanded', 'true');
     }
 
     header.addEventListener('click', () => {
       const nowCollapsed = g.classList.toggle('collapsed');
       header.setAttribute('aria-expanded', nowCollapsed ? 'false' : 'true');
-      localStorage.setItem(storageKey, nowCollapsed ? 'collapsed' : 'open');
+      if (storageKey) localStorage.setItem(storageKey, nowCollapsed ? 'collapsed' : 'open');
     });
 
     header.addEventListener('keydown', e => {
