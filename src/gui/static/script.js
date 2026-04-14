@@ -478,6 +478,16 @@ async function runOperation(op, needs) {
    Equivalent Statements modal
    ───────────────────────────────────────────────────────────────────────── */
 
+let _closeTimer  = null;
+let _modalOpener = null; // element to return focus to on close
+
+/** Collect all keyboard-focusable elements inside a container. */
+function getFocusable(container) {
+  return Array.from(container.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ));
+}
+
 async function openEquivModal() {
   const matA = getMatrixA();
   if (!matA) {
@@ -488,6 +498,9 @@ async function openEquivModal() {
   // Cancel any pending close animation before reopening
   clearTimeout(_closeTimer);
 
+  // Remember what was focused so we can restore it on close
+  _modalOpener = document.activeElement;
+
   // Reset modal content
   els.equivCategory.textContent = 'Loading\u2026';
   els.equivProps.innerHTML = '';
@@ -497,7 +510,12 @@ async function openEquivModal() {
   // before adding modal-visible, so the CSS transition actually fires)
   els.equivModal.classList.remove('hidden');
   requestAnimationFrame(() =>
-    requestAnimationFrame(() => els.equivModal.classList.add('modal-visible'))
+    requestAnimationFrame(() => {
+      els.equivModal.classList.add('modal-visible');
+      // Move focus into modal so keyboard/screen-reader users land inside it
+      const focusable = getFocusable(els.equivModal);
+      if (focusable.length) focusable[0].focus();
+    })
   );
 
   try {
@@ -546,12 +564,16 @@ async function openEquivModal() {
   }
 }
 
-let _closeTimer = null;
-
 function closeEquivModal() {
   clearTimeout(_closeTimer);
   els.equivModal.classList.remove('modal-visible');
-  _closeTimer = setTimeout(() => els.equivModal.classList.add('hidden'), 200);
+  _closeTimer = setTimeout(() => {
+    els.equivModal.classList.add('hidden');
+    // Restore focus to the element that opened the modal
+    if (_modalOpener && typeof _modalOpener.focus === 'function') {
+      _modalOpener.focus();
+    }
+  }, 200);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -665,10 +687,21 @@ function init() {
     if (e.target === els.equivModal) closeEquivModal();
   });
 
-  // Close modal on Escape
+  // Modal keyboard: Escape closes, Tab is trapped inside
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !els.equivModal.classList.contains('hidden')) {
+    if (els.equivModal.classList.contains('hidden')) return;
+    if (e.key === 'Escape') {
       closeEquivModal();
+    } else if (e.key === 'Tab') {
+      const focusable = getFocusable(els.equivModal);
+      if (!focusable.length) { e.preventDefault(); return; }
+      const first = focusable[0];
+      const last  = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+      }
     }
   });
 }

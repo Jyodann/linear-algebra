@@ -611,7 +611,6 @@ body {
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
-.modal.hidden { display: none; }
 .modal.modal-visible { opacity: 1; pointer-events: auto; }
 
 .modal-box {
