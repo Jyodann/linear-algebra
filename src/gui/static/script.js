@@ -33,13 +33,21 @@ const OP_LABELS = {
   find_cases:       'Find Cases',
 };
 
+/* ── Status badge config ────────────────────────────────────────────────── */
+const STATUS_CONFIG = {
+  ready:     { cls: 'status-ready',     text: 'Ready',       cancel: false },
+  computing: { cls: 'status-computing', text: 'Computing\u2026', cancel: true  },
+  done:      { cls: 'status-done',      text: 'Done \u2713', cancel: false },
+  error:     { cls: 'status-error',     text: 'Error',       cancel: false },
+};
+
 /* ── State ──────────────────────────────────────────────────────────────── */
 const state = {
   rowsA: 2,
   colsA: 2,
   rowsB: 2,
   colsB: 1,
-  textModeA: false,       // grid vs textarea
+  textModeA: false,
   secondaryMode: null,    // null | 'rhs' | 'rhs-optional' | 'matrix2'
   stepsCollapsed: false,
   activeOp: null,
@@ -50,36 +58,37 @@ const state = {
 const $ = id => document.getElementById(id);
 
 const els = {
-  rowsA:       $('rowsA'),
-  colsA:       $('colsA'),
-  updateA:     $('updateA'),
-  clearA:      $('clearA'),
-  gridA:       $('gridA'),
-  textWrapA:   $('textWrapA'),
-  textA:       $('textA'),
-  toggleModeA: $('toggleModeA'),
-  cardB:       $('cardB'),
-  labelB:      $('labelB'),
-  dimCtrlB:    $('dimCtrlB'),
-  rowsB:       $('rowsB'),
-  colsB:       $('colsB'),
-  updateB:     $('updateB'),
-  gridB:       $('gridB'),
-  hintB:       $('hintB'),
-  opLabel:     $('opLabel'),
-  statusBadge: $('statusBadge'),
-  cancelBtn:   $('cancelBtn'),
-  resultDisplay: $('resultDisplay'),
-  stepsCard:   $('stepsCard'),
-  stepsBody:   $('stepsBody'),
-  toggleSteps: $('toggleSteps'),
+  rowsA:            $('rowsA'),
+  colsA:            $('colsA'),
+  updateA:          $('updateA'),
+  clearA:           $('clearA'),
+  gridA:            $('gridA'),
+  textWrapA:        $('textWrapA'),
+  textA:            $('textA'),
+  toggleModeA:      $('toggleModeA'),
+  cardB:            $('cardB'),
+  labelB:           $('labelB'),
+  dimCtrlB:         $('dimCtrlB'),
+  rowsB:            $('rowsB'),
+  colsB:            $('colsB'),
+  updateB:          $('updateB'),
+  gridB:            $('gridB'),
+  hintB:            $('hintB'),
+  opLabel:          $('opLabel'),
+  statusBadge:      $('statusBadge'),
+  cancelBtn:        $('cancelBtn'),
+  answerShimmer:    $('answerShimmer'),
+  resultDisplay:    $('resultDisplay'),
+  stepsCard:        $('stepsCard'),
+  stepsBody:        $('stepsBody'),
+  toggleSteps:      $('toggleSteps'),
   toggleStepsLabel: $('toggleStepsLabel'),
-  equivBtn:    $('equivBtn'),
-  equivModal:  $('equivModal'),
-  closeModal:  $('closeModal'),
-  equivCategory: $('equivCategory'),
-  equivProps:  $('equivProps'),
-  equivList:   $('equivList'),
+  equivBtn:         $('equivBtn'),
+  equivModal:       $('equivModal'),
+  closeModal:       $('closeModal'),
+  equivCategory:    $('equivCategory'),
+  equivProps:       $('equivProps'),
+  equivList:        $('equivList'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -110,32 +119,19 @@ function createGrid(containerId, rows, cols) {
       // preventDefault only fires when a target exists, so default caret
       // movement within a cell is preserved at grid boundaries.
       input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          const next = container.querySelector(
-            `[data-row="${r + 1}"][data-col="${c}"]`
-          );
-          if (next) { e.preventDefault(); next.focus(); }
-        } else if (e.key === 'ArrowRight') {
-          const next = container.querySelector(
-            `[data-row="${r}"][data-col="${c + 1}"]`
-          );
-          if (next) { e.preventDefault(); next.focus(); }
-        } else if (e.key === 'ArrowLeft') {
-          const next = container.querySelector(
-            `[data-row="${r}"][data-col="${c - 1}"]`
-          );
-          if (next) { e.preventDefault(); next.focus(); }
-        } else if (e.key === 'ArrowDown') {
-          const next = container.querySelector(
-            `[data-row="${r + 1}"][data-col="${c}"]`
-          );
-          if (next) { e.preventDefault(); next.focus(); }
-        } else if (e.key === 'ArrowUp') {
-          const next = container.querySelector(
-            `[data-row="${r - 1}"][data-col="${c}"]`
-          );
-          if (next) { e.preventDefault(); next.focus(); }
-        }
+        const dirs = {
+          Enter:       [1,  0],
+          ArrowDown:   [1,  0],
+          ArrowUp:     [-1, 0],
+          ArrowRight:  [0,  1],
+          ArrowLeft:   [0, -1],
+        };
+        const delta = dirs[e.key];
+        if (!delta) return;
+        const next = container.querySelector(
+          `[data-row="${r + delta[0]}"][data-col="${c + delta[1]}"]`
+        );
+        if (next) { e.preventDefault(); next.focus(); }
       });
 
       container.appendChild(input);
@@ -209,9 +205,7 @@ function getMatrixA() {
 function toggleTextModeA() {
   state.textModeA = !state.textModeA;
   if (state.textModeA) {
-    // Capture current grid values into textarea (from_str format)
-    const gridStr = readGrid('gridA', state.rowsA, state.colsA);
-    els.textA.value = gridStr;
+    els.textA.value = readGrid('gridA', state.rowsA, state.colsA);
     els.gridA.classList.add('hidden');
     els.textWrapA.classList.remove('hidden');
   } else {
@@ -236,9 +230,9 @@ function showSecondary(mode) {
         createGrid('gridB', state.rowsB, state.colsB);
       }
     }
-    return; // Fast path: already showing correctly
+    return;
   }
-  
+
   state.secondaryMode = mode;
 
   if (!mode) {
@@ -289,9 +283,8 @@ function getSecondaryValue() {
   const raw = readGrid('gridB', state.rowsB, state.colsB);
 
   if (mode === 'rhs-optional') {
-    const container = els.gridB;
     const allEmpty = Array.from(
-      container.querySelectorAll('.grid-cell')
+      els.gridB.querySelectorAll('.grid-cell')
     ).every(c => c.value.trim() === '');
     if (allEmpty) return null;
   }
@@ -303,66 +296,43 @@ function getSecondaryValue() {
    Status badge
    ───────────────────────────────────────────────────────────────────────── */
 
-function setStatus(state_) {
-  const badge = els.statusBadge;
-  badge.className = 'status-badge';
-  const cancelBtn = $('cancelBtn');
-  switch (state_) {
-    case 'ready':
-      badge.classList.add('status-ready');
-      badge.textContent = 'Ready';
-      if (cancelBtn) cancelBtn.classList.add('hidden');
-      break;
-    case 'computing':
-      badge.classList.add('status-computing');
-      badge.textContent = 'Computing…';
-      if (cancelBtn) cancelBtn.classList.remove('hidden');
-      break;
-    case 'done':
-      badge.classList.add('status-done');
-      badge.textContent = 'Done ✓';
-      if (cancelBtn) cancelBtn.classList.add('hidden');
-      break;
-    case 'error':
-      badge.classList.add('status-error');
-      badge.textContent = 'Error';
-      if (cancelBtn) cancelBtn.classList.add('hidden');
-      break;
-  }
+function setStatus(s) {
+  const cfg = STATUS_CONFIG[s];
+  if (!cfg) return;
+  els.statusBadge.className = `status-badge ${cfg.cls}`;
+  els.statusBadge.textContent = cfg.text;
+  els.cancelBtn.classList.toggle('hidden', !cfg.cancel);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
    Result & steps rendering
    ───────────────────────────────────────────────────────────────────────── */
 
-/** Show shimmer skeleton while computing; hides the result display. */
 function showShimmer() {
-  const shimmer = $('answerShimmer');
-  if (shimmer) shimmer.classList.remove('hidden');
+  els.answerShimmer.classList.remove('hidden');
   els.resultDisplay.classList.add('hidden');
   els.resultDisplay.innerHTML = '';
 }
 
-/** Hide shimmer skeleton and reveal the result display. */
 function hideShimmer() {
-  const shimmer = $('answerShimmer');
-  if (shimmer) shimmer.classList.add('hidden');
+  els.answerShimmer.classList.add('hidden');
   els.resultDisplay.classList.remove('hidden');
+}
+
+/** Typeset MathJax inside a container, no-op if MathJax not loaded. */
+async function typesetMath(container) {
+  if (window.MathJax && MathJax.typesetPromise) {
+    await MathJax.typesetPromise([container]).catch(console.error);
+  }
 }
 
 async function renderResult(html) {
   els.resultDisplay.innerHTML = html;
-  if (window.MathJax && MathJax.typesetPromise) {
-    await MathJax.typesetPromise([els.resultDisplay]).catch(console.error);
-  }
+  await typesetMath(els.resultDisplay);
   hideShimmer();
 }
 
-function renderSteps(html) {
-  els.stepsBody.innerHTML = html;
-  els.stepsCard.classList.remove('hidden');
-
-  // Restore collapse state
+function applyStepsVisibility() {
   if (state.stepsCollapsed) {
     els.stepsBody.classList.add('hidden');
     els.toggleStepsLabel.textContent = 'Show steps';
@@ -372,10 +342,13 @@ function renderSteps(html) {
     els.toggleStepsLabel.textContent = 'Hide steps';
     els.toggleSteps.setAttribute('aria-expanded', 'true');
   }
+}
 
-  if (window.MathJax && MathJax.typesetPromise) {
-    MathJax.typesetPromise([els.stepsBody]).catch(console.error);
-  }
+function renderSteps(html) {
+  els.stepsBody.innerHTML = html;
+  els.stepsCard.classList.remove('hidden');
+  applyStepsVisibility();
+  typesetMath(els.stepsBody);
 }
 
 function clearSteps() {
@@ -390,15 +363,13 @@ function clearSteps() {
 let _opGeneration = 0;
 
 async function runOperation(op, needs) {
-  // Abort any in-flight request
   if (state.currentAbort) {
     state.currentAbort.abort();
     state.currentAbort = null;
   }
   const myGen = ++_opGeneration;
 
-  // Update active state
-  document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active'));
+  opBtns.forEach(b => b.classList.remove('active'));
   const btn = document.querySelector(`[data-op="${op}"]`);
   if (btn) btn.classList.add('active');
 
@@ -408,10 +379,8 @@ async function runOperation(op, needs) {
   clearSteps();
   showShimmer();
 
-  // Show / hide secondary input
   showSecondary(needs || null);
 
-  // Build request body
   const body = { operation: op };
 
   const matA = getMatrixA();
@@ -426,11 +395,9 @@ async function runOperation(op, needs) {
     const rhsVal = getSecondaryValue();
     if (rhsVal) body.rhs = rhsVal;
   } else if (needs === 'matrix2') {
-    const m2 = readGrid('gridB', state.rowsB, state.colsB);
-    body.matrix2 = m2;
+    body.matrix2 = readGrid('gridB', state.rowsB, state.colsB);
   }
 
-  // Create abort controller for this request
   const controller = new AbortController();
   state.currentAbort = controller;
 
@@ -443,12 +410,12 @@ async function runOperation(op, needs) {
     });
 
     state.currentAbort = null;
-    if (myGen !== _opGeneration) return; // superseded by a newer operation
+    if (myGen !== _opGeneration) return;
     const data = await resp.json();
 
     if (data.error) {
       setStatus('error');
-      await renderResult(`<div class="error-message">Could not compute — ${escapeHtml(data.error)}</div>`);
+      await renderResult(`<div class="error-message">Could not compute \u2014 ${escapeHtml(data.error)}</div>`);
       return;
     }
 
@@ -461,7 +428,7 @@ async function runOperation(op, needs) {
   } catch (err) {
     state.currentAbort = null;
     if (err.name === 'AbortError') {
-      if (myGen !== _opGeneration) return; // superseded — let the new op manage shimmer
+      if (myGen !== _opGeneration) return;
       els.resultDisplay.innerHTML = '<p class="placeholder">Cancelled. Select an operation from the left panel.</p>';
       hideShimmer();
       setStatus('ready');
@@ -478,8 +445,9 @@ async function runOperation(op, needs) {
    Equivalent Statements modal
    ───────────────────────────────────────────────────────────────────────── */
 
-let _closeTimer  = null;
-let _modalOpener = null; // element to return focus to on close
+let _closeTimer   = null;
+let _modalOpener  = null;
+let _modalFocusable = [];
 
 /** Collect all keyboard-focusable elements inside a container. */
 function getFocusable(container) {
@@ -495,26 +463,19 @@ async function openEquivModal() {
     return;
   }
 
-  // Cancel any pending close animation before reopening
   clearTimeout(_closeTimer);
-
-  // Remember what was focused so we can restore it on close
   _modalOpener = document.activeElement;
 
-  // Reset modal content
   els.equivCategory.textContent = 'Loading\u2026';
   els.equivProps.innerHTML = '';
   els.equivList.innerHTML = '';
 
-  // Show modal with animation (double-rAF ensures browser flushes display:none
-  // before adding modal-visible, so the CSS transition actually fires)
   els.equivModal.classList.remove('hidden');
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       els.equivModal.classList.add('modal-visible');
-      // Move focus into modal so keyboard/screen-reader users land inside it
-      const focusable = getFocusable(els.equivModal);
-      if (focusable.length) focusable[0].focus();
+      _modalFocusable = getFocusable(els.equivModal);
+      if (_modalFocusable.length) _modalFocusable[0].focus();
     })
   );
 
@@ -533,10 +494,8 @@ async function openEquivModal() {
       return;
     }
 
-    // Category
     els.equivCategory.textContent = data.category || '';
 
-    // Property tags
     const p = data.properties || {};
     const tagDefs = [
       { cls: 'tag-rows',    label: `rows = ${p.rows}` },
@@ -548,16 +507,10 @@ async function openEquivModal() {
       .map(t => `<span class="prop-tag ${t.cls}">${escapeHtml(t.label)}</span>`)
       .join('');
 
-    // Statements list
     const stmts = data.statements || [];
-    els.equivList.innerHTML = stmts
-      .map(s => `<li>${s}</li>`)
-      .join('');
+    els.equivList.innerHTML = stmts.map(s => `<li>${s}</li>`).join('');
 
-    // Re-typeset LaTeX inside modal
-    if (window.MathJax && MathJax.typesetPromise) {
-      MathJax.typesetPromise([els.equivModal]).catch(console.error);
-    }
+    typesetMath(els.equivModal);
   } catch (err) {
     els.equivCategory.textContent = 'Network error';
     els.equivList.innerHTML = `<li><div class="error-message">${escapeHtml(err.message)}</div></li>`;
@@ -569,10 +522,10 @@ function closeEquivModal() {
   els.equivModal.classList.remove('modal-visible');
   _closeTimer = setTimeout(() => {
     els.equivModal.classList.add('hidden');
-    // Restore focus to the element that opened the modal
     if (_modalOpener && typeof _modalOpener.focus === 'function') {
       _modalOpener.focus();
     }
+    _modalOpener = null;
   }, 200);
 }
 
@@ -592,6 +545,9 @@ function escapeHtml(str) {
    Initialisation
    ───────────────────────────────────────────────────────────────────────── */
 
+// Cached NodeList for active-state management — buttons don't change after init
+let opBtns;
+
 function init() {
   // 1. Apply op-group colors and wire accordion toggle with localStorage
   document.querySelectorAll('.op-group').forEach(g => {
@@ -604,7 +560,6 @@ function init() {
     const labelText  = g.querySelector('.group-label')?.textContent.trim() || '';
     const storageKey = labelText ? `la-studio-op-group-${labelText}` : null;
 
-    // Restore collapsed state from localStorage
     if (storageKey && localStorage.getItem(storageKey) === 'collapsed') {
       g.classList.add('collapsed');
       header.setAttribute('aria-expanded', 'false');
@@ -619,10 +574,7 @@ function init() {
     });
 
     header.addEventListener('keydown', e => {
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        header.click();
-      }
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); header.click(); }
     });
   });
 
@@ -644,27 +596,19 @@ function init() {
   els.colsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
 
   // 6. Operation buttons
-  document.querySelectorAll('.op-btn').forEach(btn => {
+  opBtns = document.querySelectorAll('.op-btn');
+  opBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const op = btn.dataset.op;
-      const needs = btn.dataset.needs;  // '', 'rhs', 'rhs-optional', 'matrix2'
       if (!op) return;
-      runOperation(op, needs);
+      runOperation(op, btn.dataset.needs);
     });
   });
 
   // 7. Steps collapse toggle
   els.toggleSteps.addEventListener('click', () => {
     state.stepsCollapsed = !state.stepsCollapsed;
-    if (state.stepsCollapsed) {
-      els.stepsBody.classList.add('hidden');
-      els.toggleStepsLabel.textContent = 'Show steps';
-      els.toggleSteps.setAttribute('aria-expanded', 'false');
-    } else {
-      els.stepsBody.classList.remove('hidden');
-      els.toggleStepsLabel.textContent = 'Hide steps';
-      els.toggleSteps.setAttribute('aria-expanded', 'true');
-    }
+    applyStepsVisibility();
   });
 
   // 8. Equivalent statements
@@ -672,15 +616,12 @@ function init() {
   els.closeModal.addEventListener('click', closeEquivModal);
 
   // 9. Cancel button
-  const cancelBtn = $('cancelBtn');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-      if (state.currentAbort) {
-        state.currentAbort.abort();
-        state.currentAbort = null;
-      }
-    });
-  }
+  els.cancelBtn.addEventListener('click', () => {
+    if (state.currentAbort) {
+      state.currentAbort.abort();
+      state.currentAbort = null;
+    }
+  });
 
   // Close modal on backdrop click
   els.equivModal.addEventListener('click', e => {
@@ -693,10 +634,9 @@ function init() {
     if (e.key === 'Escape') {
       closeEquivModal();
     } else if (e.key === 'Tab') {
-      const focusable = getFocusable(els.equivModal);
-      if (!focusable.length) { e.preventDefault(); return; }
-      const first = focusable[0];
-      const last  = focusable[focusable.length - 1];
+      if (!_modalFocusable.length) { e.preventDefault(); return; }
+      const first = _modalFocusable[0];
+      const last  = _modalFocusable[_modalFocusable.length - 1];
       if (e.shiftKey) {
         if (document.activeElement === first) { e.preventDefault(); last.focus(); }
       } else {
@@ -706,5 +646,4 @@ function init() {
   });
 }
 
-// Kick off once DOM is ready
 document.addEventListener('DOMContentLoaded', init);

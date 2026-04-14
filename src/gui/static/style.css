@@ -29,6 +29,8 @@
   --green:  #15803d;
   --amber:  #b45309;
   --rose:   #be123c;
+  --rose-dim:    rgba(190,18,60,0.07);
+  --rose-border: rgba(190,18,60,0.32);
   --purple: #6d28d9;
   --teal:   #0f766e;
   --sky:    #0369a1;
@@ -188,7 +190,7 @@ body {
 }
 .btn-sm:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
 .btn-sm-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
-.btn-sm-ghost:hover { background: rgba(190,18,60,0.06); border-color: rgba(190,18,60,0.3); color: var(--rose); }
+.btn-sm-ghost:hover { background: var(--rose-dim); border-color: var(--rose-border); color: var(--rose); }
 
 /* ── Matrix grid ────────────────────────────────────────────────────────── */
 .matrix-grid {
@@ -646,7 +648,7 @@ body {
   transition: color 0.15s, background 0.15s, border-color 0.15s;
   flex-shrink: 0;
 }
-.modal-close:hover { color: var(--rose); background: rgba(190,18,60,0.07); border-color: rgba(190,18,60,0.35); }
+.modal-close:hover { color: var(--rose); background: var(--rose-dim); border-color: var(--rose-border); }
 
 .modal-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem; padding-right: 2.5rem; }
 .modal-icon { flex-shrink: 0; margin-top: 0.15rem; }
@@ -657,11 +659,14 @@ body {
   display: inline-flex; align-items: center; gap: 0.28rem;
   padding: 0.22rem 0.6rem; border-radius: 100px;
   font-size: 0.72rem; font-weight: 700; font-family: var(--mono); letter-spacing: 0.03em;
+  background: rgba(var(--tag-rgb), 0.08);
+  border: 1px solid rgba(var(--tag-rgb), 0.22);
+  color: var(--tag-color);
 }
-.prop-tag.tag-rows    { background: rgba(3,105,161,0.08);   border: 1px solid rgba(3,105,161,0.22);   color: var(--sky);    }
-.prop-tag.tag-cols    { background: rgba(109,40,217,0.08);  border: 1px solid rgba(109,40,217,0.22);  color: var(--purple); }
-.prop-tag.tag-rank    { background: rgba(21,128,61,0.08);   border: 1px solid rgba(21,128,61,0.22);   color: var(--green);  }
-.prop-tag.tag-nullity { background: rgba(180,83,9,0.08);    border: 1px solid rgba(180,83,9,0.22);    color: var(--amber);  }
+.prop-tag.tag-rows    { --tag-rgb: 3,105,161;   --tag-color: var(--sky);    }
+.prop-tag.tag-cols    { --tag-rgb: 109,40,217;  --tag-color: var(--purple); }
+.prop-tag.tag-rank    { --tag-rgb: 21,128,61;   --tag-color: var(--green);  }
+.prop-tag.tag-nullity { --tag-rgb: 180,83,9;    --tag-color: var(--amber);  }
 
 .equiv-list {
   list-style: none;
