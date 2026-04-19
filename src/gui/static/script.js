@@ -100,19 +100,16 @@ const els = {
   equivProps:       $('equivProps'),
   equivList:        $('equivList'),
   modsA:    $('modsA'),
-  modAT:    $('modAT'),
-  modAInv:  $('modAInv'),
+  modSegA:  $('modSegA'),
   modsB:    $('modsB'),
-  modBT:    $('modBT'),
-  modBInv:  $('modBInv'),
+  modSegB:  $('modSegB'),
   cardC:    $('cardC'),
   gridC:    $('gridC'),
   rowsC:    $('rowsC'),
   colsC:    $('colsC'),
   updateC:  $('updateC'),
   modsC:    $('modsC'),
-  modCT:    $('modCT'),
-  modCInv:  $('modCInv'),
+  modSegC:  $('modSegC'),
   addM3Btn:      $('addM3Btn'),
   answerToolbar:   $('answerToolbar'),
   copyBtn:         $('copyBtn'),
@@ -410,28 +407,21 @@ function clearSteps() {
    Chain multiply helpers
    ───────────────────────────────────────────────────────────────────────── */
 
-function getModStr(mod) {
-  if (mod.T && mod.inv) return 'inv_T';
-  if (mod.T) return 'T';
-  if (mod.inv) return 'inv';
-  return 'none';
+/** Read the active modifier from a segment control. */
+function getChainMod(segEl) {
+  if (!segEl) return 'none';
+  const active = segEl.querySelector('.mod-seg-btn.active');
+  return active ? active.dataset.mod : 'none';
 }
 
-function wireModBtn(btnEl, modObj, key) {
-  btnEl.addEventListener('click', () => {
-    modObj[key] = !modObj[key];
-    btnEl.classList.toggle('active', modObj[key]);
-  });
-}
-
+/** Reset all three segment controls to "none". */
 function resetChainMods() {
-  ['modAT','modAInv','modBT','modBInv','modCT','modCInv'].forEach(id => {
-    const el = $(id);
-    if (el) el.classList.remove('active');
+  [els.modSegA, els.modSegB, els.modSegC].forEach(seg => {
+    if (!seg) return;
+    seg.querySelectorAll('.mod-seg-btn').forEach(b => b.classList.remove('active'));
+    const noneBtn = seg.querySelector('[data-mod="none"]');
+    if (noneBtn) noneBtn.classList.add('active');
   });
-  state.chain.modA.T = false; state.chain.modA.inv = false;
-  state.chain.modB.T = false; state.chain.modB.inv = false;
-  state.chain.modC.T = false; state.chain.modC.inv = false;
 }
 
 function configureForChain(active) {
@@ -443,7 +433,8 @@ function configureForChain(active) {
     els.modsA.classList.add('hidden');
     els.modsB.classList.add('hidden');
     els.addM3Btn.classList.add('hidden');
-    els.addM3Btn.textContent = '+ Add M3';
+    els.addM3Btn.classList.remove('m3-active');
+    els.addM3Btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Add third matrix';
     els.cardC.classList.add('hidden');
     state.chain.showM3 = false;
     resetChainMods();
@@ -495,9 +486,9 @@ async function runOperation(op, needs) {
     if (state.chain.showM3) {
       body.matrix3 = readGrid('gridC', state.rowsC, state.colsC);
     }
-    body.mod1 = getModStr(state.chain.modA);
-    body.mod2 = getModStr(state.chain.modB);
-    body.mod3 = getModStr(state.chain.modC);
+    body.mod1 = getChainMod(els.modSegA);
+    body.mod2 = getChainMod(els.modSegB);
+    body.mod3 = getChainMod(els.modSegC);
   }
 
   const controller = new AbortController();
@@ -804,13 +795,16 @@ function init() {
   els.rowsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
   els.colsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
 
-  // 5b. Chain multiply: modifier buttons
-  wireModBtn(els.modAT,   state.chain.modA, 'T');
-  wireModBtn(els.modAInv, state.chain.modA, 'inv');
-  wireModBtn(els.modBT,   state.chain.modB, 'T');
-  wireModBtn(els.modBInv, state.chain.modB, 'inv');
-  wireModBtn(els.modCT,   state.chain.modC, 'T');
-  wireModBtn(els.modCInv, state.chain.modC, 'inv');
+  // 5b. Chain multiply: segment control wiring
+  [els.modSegA, els.modSegB, els.modSegC].forEach(seg => {
+    if (!seg) return;
+    seg.querySelectorAll('.mod-seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        seg.querySelectorAll('.mod-seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
 
   // Chain multiply: M3 toggle
   els.addM3Btn.addEventListener('click', () => {
@@ -818,14 +812,18 @@ function init() {
     if (state.chain.showM3) {
       createGrid('gridC', state.rowsC, state.colsC);
       els.cardC.classList.remove('hidden');
-      els.addM3Btn.textContent = '× Remove M3';
+      els.addM3Btn.classList.add('m3-active');
+      els.addM3Btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Remove third matrix';
     } else {
       els.cardC.classList.add('hidden');
-      els.addM3Btn.textContent = '+ Add M3';
-      els.modCT.classList.remove('active');
-      els.modCInv.classList.remove('active');
-      state.chain.modC.T = false;
-      state.chain.modC.inv = false;
+      els.addM3Btn.classList.remove('m3-active');
+      els.addM3Btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Add third matrix';
+      // Reset M3 segment
+      if (els.modSegC) {
+        els.modSegC.querySelectorAll('.mod-seg-btn').forEach(b => b.classList.remove('active'));
+        const noneBtn = els.modSegC.querySelector('[data-mod="none"]');
+        if (noneBtn) noneBtn.classList.add('active');
+      }
     }
   });
 

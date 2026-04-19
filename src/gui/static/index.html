@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=3">
   <script>
     window.MathJax = {
       tex: {
@@ -47,8 +47,12 @@
         <div class="card-header">
           <span class="card-label">Matrix A</span>
           <div class="chain-mods hidden" id="modsA">
-            <button class="mod-btn" id="modAT">T</button>
-            <button class="mod-btn" id="modAInv">⁻¹</button>
+            <div class="mod-segment" id="modSegA">
+              <button class="mod-seg-btn active" data-mod="none" title="No transform">·</button>
+              <button class="mod-seg-btn" data-mod="T" title="Transpose">T<sup>T</sup></button>
+              <button class="mod-seg-btn" data-mod="inv" title="Inverse">⁻¹</button>
+              <button class="mod-seg-btn" data-mod="inv_T" title="Inverse Transpose">(T<sup>T</sup>)⁻¹</button>
+            </div>
           </div>
           <div class="dim-controls">
             <input type="number" id="rowsA" value="2" min="1" max="10" aria-label="Rows">
@@ -79,8 +83,12 @@
         <div class="card-header">
           <span class="card-label" id="labelB">Vector b</span>
           <div class="chain-mods hidden" id="modsB">
-            <button class="mod-btn" id="modBT">T</button>
-            <button class="mod-btn" id="modBInv">⁻¹</button>
+            <div class="mod-segment" id="modSegB">
+              <button class="mod-seg-btn active" data-mod="none" title="No transform">·</button>
+              <button class="mod-seg-btn" data-mod="T" title="Transpose">T<sup>T</sup></button>
+              <button class="mod-seg-btn" data-mod="inv" title="Inverse">⁻¹</button>
+              <button class="mod-seg-btn" data-mod="inv_T" title="Inverse Transpose">(T<sup>T</sup>)⁻¹</button>
+            </div>
           </div>
           <div class="dim-controls" id="dimCtrlB">
             <input type="number" id="rowsB" value="2" min="1" max="10" aria-label="Rows B">
@@ -94,15 +102,22 @@
       </div>
 
       <!-- Add M3 button (chain multiply only) -->
-      <button class="btn-sm hidden" id="addM3Btn">+ Add M3</button>
+      <button class="btn-add-m3 hidden" id="addM3Btn">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Add third matrix
+      </button>
 
       <!-- Matrix M3 (chain multiply optional third matrix) -->
       <div class="input-card secondary-card hidden" id="cardC">
         <div class="card-header">
           <span class="card-label">Matrix M3</span>
           <div class="chain-mods" id="modsC">
-            <button class="mod-btn" id="modCT">T</button>
-            <button class="mod-btn" id="modCInv">⁻¹</button>
+            <div class="mod-segment" id="modSegC">
+              <button class="mod-seg-btn active" data-mod="none" title="No transform">·</button>
+              <button class="mod-seg-btn" data-mod="T" title="Transpose">T<sup>T</sup></button>
+              <button class="mod-seg-btn" data-mod="inv" title="Inverse">⁻¹</button>
+              <button class="mod-seg-btn" data-mod="inv_T" title="Inverse Transpose">(T<sup>T</sup>)⁻¹</button>
+            </div>
           </div>
           <div class="dim-controls" id="dimCtrlC">
             <input type="number" id="rowsC" value="2" min="1" max="10" aria-label="Rows C">
@@ -263,7 +278,9 @@
         <span id="opLabel" class="op-label">—</span>
         <div class="op-bar-right">
           <button id="historyBtn" class="btn-history" aria-label="Show calculation history">
-            History<span id="historyCount" class="history-count hidden">0</span>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 3.5V6.5L8.5 8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            History
+            <span id="historyCount" class="history-count hidden">0</span>
           </button>
           <button id="cancelBtn" class="btn-cancel hidden" aria-label="Cancel computation">✕ Cancel</button>
           <span id="statusBadge" class="status-badge status-ready">Ready</span>
@@ -336,6 +353,6 @@
     <div class="history-drawer-body" id="historyList"></div>
   </aside>
 
-  <script src="/static/script.js"></script>
+  <script src="/static/script.js?v=3"></script>
 </body>
 </html>
