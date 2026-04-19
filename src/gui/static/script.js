@@ -417,9 +417,9 @@ function resetChainMods() {
     const el = $(id);
     if (el) el.classList.remove('active');
   });
-  state.chain.modA = { T: false, inv: false };
-  state.chain.modB = { T: false, inv: false };
-  state.chain.modC = { T: false, inv: false };
+  state.chain.modA.T = false; state.chain.modA.inv = false;
+  state.chain.modB.T = false; state.chain.modB.inv = false;
+  state.chain.modC.T = false; state.chain.modC.inv = false;
 }
 
 function configureForChain(active) {
@@ -705,7 +705,8 @@ function init() {
       els.addM3Btn.textContent = '+ Add M3';
       els.modCT.classList.remove('active');
       els.modCInv.classList.remove('active');
-      state.chain.modC = { T: false, inv: false };
+      state.chain.modC.T = false;
+      state.chain.modC.inv = false;
     }
   });
 
