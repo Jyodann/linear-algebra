@@ -135,6 +135,10 @@ async def process_matrix(request: Request):
         data = await request.json()
         matrix_str = data.get("matrix", "")
         matrix2_str = data.get("matrix2", "")
+        matrix3_str = data.get("matrix3", "")
+        mod1 = data.get("mod1", "none")
+        mod2 = data.get("mod2", "none")
+        mod3 = data.get("mod3", "none")
         rhs_str = data.get("rhs", "")
         operation = data.get("operation", "")
 
@@ -159,6 +163,13 @@ async def process_matrix(request: Request):
                 B = parse_matrix(matrix2_str)
             except Exception as e:
                 return JSONResponse(content={"error": f"Failed to parse matrix2: {e}"}, status_code=400)
+
+        C = None
+        if matrix3_str and matrix3_str.strip():
+            try:
+                C = parse_matrix(matrix3_str)
+            except Exception as e:
+                return JSONResponse(content={"error": f"Failed to parse matrix3: {e}"}, status_code=400)
 
         loop = asyncio.get_event_loop()
 
@@ -397,6 +408,31 @@ async def process_matrix(request: Request):
                         )
                     result = "\\[ " + ", \\quad ".join(parts) + " \\]"
                 raw = ""
+
+            elif operation == "chain_multiply":
+                def _apply_mod(M, mod):
+                    if mod == "T":
+                        return M.T
+                    elif mod == "inv":
+                        return M.inv()
+                    elif mod == "inv_T":
+                        return M.inv().T
+                    return M
+
+                operands = [(A, mod1)]
+                if B is not None:
+                    operands.append((B, mod2))
+                if C is not None:
+                    operands.append((C, mod3))
+
+                modified = [_apply_mod(M, m) for M, m in operands]
+                result_mat = modified[0]
+                for M in modified[1:]:
+                    result_mat = result_mat @ M
+                result_mat = result_mat.doit()
+
+                result = f"\\[ {sym.latex(result_mat)} \\]"
+                raw = matrix_to_raw(result_mat)
 
             else:
                 return None, None, None, f"Unknown operation: {operation}"

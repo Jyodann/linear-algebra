@@ -91,6 +91,75 @@ def test_raw_field_decomposition():
     assert "L=" in data["raw"]
     assert "U=" in data["raw"]
 
+def test_chain_multiply_two_matrices():
+    response = client.post(
+        "/api/process",
+        json={
+            "operation": "chain_multiply",
+            "matrix":  "[[1, 0], [0, 1]]",
+            "matrix2": "[[2, 0], [0, 3]]",
+            "mod1": "none",
+            "mod2": "none",
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" not in data
+    assert "2" in data["result"]
+    assert "3" in data["result"]
+
+def test_chain_multiply_three_matrices():
+    response = client.post(
+        "/api/process",
+        json={
+            "operation": "chain_multiply",
+            "matrix":  "[[1, 0], [0, 1]]",
+            "matrix2": "[[2, 0], [0, 2]]",
+            "matrix3": "[[3, 0], [0, 3]]",
+            "mod1": "none",
+            "mod2": "none",
+            "mod3": "none",
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" not in data
+    assert "6" in data["result"]
+
+def test_chain_multiply_transpose():
+    # A^T @ A for [[1,2],[3,4]] should give [[10,14],[14,20]]
+    response = client.post(
+        "/api/process",
+        json={
+            "operation": "chain_multiply",
+            "matrix":  "[[1, 2], [3, 4]]",
+            "matrix2": "[[1, 2], [3, 4]]",
+            "mod1": "T",
+            "mod2": "none",
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" not in data
+    assert "10" in data["result"]
+
+def test_chain_multiply_inverse():
+    # A^{-1} @ A = I for [[1,2],[3,4]]
+    response = client.post(
+        "/api/process",
+        json={
+            "operation": "chain_multiply",
+            "matrix":  "[[1, 2], [3, 4]]",
+            "matrix2": "[[1, 2], [3, 4]]",
+            "mod1": "inv",
+            "mod2": "none",
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" not in data
+    assert "1" in data["result"]
+
 if __name__ == "__main__":
     try:
         test_rref()
