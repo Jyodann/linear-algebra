@@ -360,6 +360,7 @@ function showShimmer() {
   els.resultDisplay.classList.add('hidden');
   els.resultDisplay.innerHTML = '';
   els.answerToolbar.classList.add('hidden');
+  els.copyBtn.textContent = 'Copy';
   state.lastRaw = null;
 }
 
@@ -749,6 +750,8 @@ function restoreHistory(entry) {
     els.answerToolbar.classList.add('hidden');
   }
 
+  opBtns.forEach(b => b.classList.remove('active'));
+  state.activeOp = entry.op;
   els.opLabel.textContent = entry.label;
   setStatus('done');
   closeHistoryDrawer();
