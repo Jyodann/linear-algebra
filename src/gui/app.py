@@ -21,27 +21,33 @@ app.mount("/static", StaticFiles(directory="src/gui/static"), name="static")
 # ---------------------------------------------------------------------------
 
 def parse_matrix(s: str) -> Matrix:
-    """Try LaTeX → nested-list literal → from_str ([v v; v v] format)."""
+    """Try LaTeX → nested-list literal → from_str ([v v; v v] format).
+
+    All float entries are converted to exact rationals so that symbolic
+    operations (eigenvals, diagonalize, nullspace, etc.) work correctly.
+    """
     s = s.strip()
-    # LaTeX
+
     if "begin" in s or ("\\" in s and any(c in s for c in "{}[]")):
-        return Matrix.from_latex(s, verbosity=0)
-    # Pure numeric nested list  e.g. [[1, 2], [3, 4]]
-    try:
-        list_data = ast.literal_eval(s)
-        if isinstance(list_data, list):
-            # Flatten inner lists to sym expressions
-            parsed = []
-            for row in list_data:
-                if isinstance(row, list):
-                    parsed.append([sym.sympify(v) for v in row])
-                else:
-                    parsed.append([sym.sympify(row)])
-            return Matrix(parsed)
-    except Exception:
-        pass
-    # from_str: "[v00 v01; v10 v11]" or text-mode variants
-    return Matrix.from_str(s)
+        M = Matrix.from_latex(s, verbosity=0)
+    else:
+        M = None
+        try:
+            list_data = ast.literal_eval(s)
+            if isinstance(list_data, list):
+                rows = []
+                for row in list_data:
+                    if isinstance(row, list):
+                        rows.append([sym.sympify(v) for v in row])
+                    else:
+                        rows.append([sym.sympify(row)])
+                M = Matrix(rows)
+        except Exception:
+            pass
+        if M is None:
+            M = Matrix.from_str(s)
+
+    return M.applyfunc(lambda x: sym.nsimplify(x, rational=True))
 
 
 def capture(fn):

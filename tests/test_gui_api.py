@@ -48,6 +48,27 @@ def test_latex_input():
     assert "result" in data
     assert "1" in data["result"]
 
+def test_diagonalize_with_decimals():
+    response = client.post(
+        "/api/process",
+        json={"matrix": "[[2.0, 0.0], [0.0, 3.0]]", "operation": "diagonalize"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" not in data
+    assert "result" in data
+    assert "P" in data["result"]
+
+def test_eigenvals_with_decimals():
+    response = client.post(
+        "/api/process",
+        json={"matrix": "[[1.5, 0.0], [0.0, 2.5]]", "operation": "eigenvals"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "error" not in data
+    assert "3/2" in data["result"] or "1.5" in data["result"] or r"\frac{3}{2}" in data["result"]
+
 if __name__ == "__main__":
     try:
         test_rref()
