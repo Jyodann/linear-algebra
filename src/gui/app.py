@@ -417,7 +417,10 @@ async def process_matrix(request: Request):
                         return M.inv()
                     elif mod == "inv_T":
                         return M.inv().T
-                    return M
+                    elif mod == "none":
+                        return M
+                    else:
+                        raise ValueError(f"Unknown modifier '{mod}'. Must be one of: none, T, inv, inv_T")
 
                 operands = [(A, mod1)]
                 if B is not None:
@@ -425,7 +428,14 @@ async def process_matrix(request: Request):
                 if C is not None:
                     operands.append((C, mod3))
 
-                modified = [_apply_mod(M, m) for M, m in operands]
+                if len(operands) < 2:
+                    return None, None, None, "chain_multiply requires at least two matrices."
+
+                try:
+                    modified = [_apply_mod(M, m) for M, m in operands]
+                except Exception as e:
+                    return None, None, None, f"Could not apply matrix modifier: {e}"
+
                 result_mat = modified[0]
                 for M in modified[1:]:
                     result_mat = result_mat @ M

@@ -160,6 +160,34 @@ def test_chain_multiply_inverse():
     assert "error" not in data
     assert "1" in data["result"]
 
+def test_chain_multiply_requires_two_matrices():
+    response = client.post(
+        "/api/process",
+        json={
+            "operation": "chain_multiply",
+            "matrix": "[[1, 0], [0, 1]]",
+            "mod1": "none",
+        }
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "error" in data
+
+def test_chain_multiply_invalid_mod():
+    response = client.post(
+        "/api/process",
+        json={
+            "operation": "chain_multiply",
+            "matrix":  "[[1, 0], [0, 1]]",
+            "matrix2": "[[1, 0], [0, 1]]",
+            "mod1": "badvalue",
+            "mod2": "none",
+        }
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "error" in data
+
 if __name__ == "__main__":
     try:
         test_rref()
