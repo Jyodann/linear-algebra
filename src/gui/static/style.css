@@ -265,13 +265,8 @@ body {
   gap: 5px;
   padding: 0.75rem;
   background: var(--surface-2);
-  overflow-x: auto;
   justify-content: start;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
-.matrix-grid::-webkit-scrollbar { height: 3px; }
-.matrix-grid::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
 
 .grid-cell {
   width: 68px;
@@ -511,6 +506,7 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -586,7 +582,6 @@ body {
   padding: 2rem 2.5rem;
   text-align: center;
   font-size: 1.1rem;
-  overflow-x: auto;
 }
 .placeholder { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
 .error-message {
@@ -608,7 +603,6 @@ body {
   background: var(--surface);
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
   border: 1px solid var(--border);
 }
 .steps-section-header {
@@ -669,13 +663,8 @@ body {
   padding: 0.875rem 1.5rem;
   margin: 0.3rem 0;
   text-align: center;
-  overflow-x: auto;
   line-height: 1.9;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
-.step-matrix::-webkit-scrollbar { height: 3px; }
-.step-matrix::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
 
 .step-text { font-size: 0.82rem; color: var(--text-sub); padding: 0.15rem 0; line-height: 1.5; }
 
