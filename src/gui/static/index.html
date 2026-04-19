@@ -262,6 +262,9 @@
       <div class="op-bar">
         <span id="opLabel" class="op-label">—</span>
         <div class="op-bar-right">
+          <button id="historyBtn" class="btn-history" aria-label="Show calculation history">
+            History<span id="historyCount" class="history-count hidden">0</span>
+          </button>
           <button id="cancelBtn" class="btn-cancel hidden" aria-label="Cancel computation">✕ Cancel</button>
           <span id="statusBadge" class="status-badge status-ready">Ready</span>
         </div>
@@ -319,6 +322,19 @@
       <ul id="equivList" class="equiv-list"></ul>
     </div>
   </div>
+
+  <!-- ═══════════════ HISTORY DRAWER ═══════════════ -->
+  <div class="history-backdrop hidden" id="historyBackdrop"></div>
+  <aside class="history-drawer" id="historyDrawer" aria-label="Calculation history">
+    <div class="history-drawer-header">
+      <span class="history-drawer-title">History</span>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <button class="btn-sm btn-sm-ghost" id="clearHistoryBtn">Clear</button>
+        <button class="btn-sm" id="closeHistoryBtn">×</button>
+      </div>
+    </div>
+    <div class="history-drawer-body" id="historyList"></div>
+  </aside>
 
   <script src="/static/script.js"></script>
 </body>

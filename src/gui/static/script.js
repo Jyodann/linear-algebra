@@ -114,8 +114,15 @@ const els = {
   modCT:    $('modCT'),
   modCInv:  $('modCInv'),
   addM3Btn:      $('addM3Btn'),
-  answerToolbar: $('answerToolbar'),
-  copyBtn:       $('copyBtn'),
+  answerToolbar:   $('answerToolbar'),
+  copyBtn:         $('copyBtn'),
+  historyBtn:      $('historyBtn'),
+  historyCount:    $('historyCount'),
+  historyDrawer:   $('historyDrawer'),
+  historyBackdrop: $('historyBackdrop'),
+  clearHistoryBtn: $('clearHistoryBtn'),
+  closeHistoryBtn: $('closeHistoryBtn'),
+  historyList:     $('historyList'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -522,6 +529,21 @@ async function runOperation(op, needs) {
       els.answerToolbar.classList.add('hidden');
     }
 
+    // Record history
+    const histMatrices = [{ label: 'A', value: getMatrixA() }];
+    if (needs === 'rhs' || needs === 'rhs-optional') {
+      const rhsVal = getSecondaryValue();
+      if (rhsVal) histMatrices.push({ label: 'b', value: rhsVal });
+    } else if (needs === 'matrix2') {
+      histMatrices.push({ label: 'B', value: readGrid('gridB', state.rowsB, state.colsB) });
+    } else if (needs === 'chain') {
+      histMatrices.push({ label: 'M2', value: readGrid('gridB', state.rowsB, state.colsB) });
+      if (state.chain.showM3) {
+        histMatrices.push({ label: 'M3', value: readGrid('gridC', state.rowsC, state.colsC) });
+      }
+    }
+    addToHistory(op, OP_LABELS[op] || op, histMatrices, data.result || '', data.steps || '', data.raw || '');
+
     if (data.steps && data.steps.trim()) {
       renderSteps(data.steps);
     }
@@ -647,6 +669,90 @@ function escapeHtml(str) {
 
 // Cached NodeList for active-state management — buttons don't change after init
 let opBtns;
+
+/* ─────────────────────────────────────────────────────────────────────────
+   History
+   ───────────────────────────────────────────────────────────────────────── */
+
+const _history = [];
+const HISTORY_MAX = 10;
+
+function _timestamp() {
+  return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function updateHistoryCount() {
+  const n = _history.length;
+  els.historyCount.textContent = n;
+  els.historyCount.classList.toggle('hidden', n === 0);
+}
+
+function addToHistory(op, label, matrices, result, steps, raw) {
+  _history.unshift({ op, label, matrices, result, steps, raw, timestamp: _timestamp() });
+  if (_history.length > HISTORY_MAX) _history.pop();
+  updateHistoryCount();
+}
+
+function renderHistoryList() {
+  if (_history.length === 0) {
+    els.historyList.innerHTML = '<p class="placeholder" style="padding:1rem;text-align:center;font-size:0.8rem">No history yet</p>';
+    return;
+  }
+  els.historyList.innerHTML = _history.map((entry, i) => {
+    const matPreview = entry.matrices.map(m => {
+      const val = m.value.length > 22 ? m.value.slice(0, 22) + '\u2026' : m.value;
+      return `<div>${escapeHtml(m.label)} = ${escapeHtml(val)}</div>`;
+    }).join('');
+    return `<div class="history-entry" data-idx="${i}">
+      <div class="history-entry-header">
+        <span class="history-entry-op">${escapeHtml(entry.label)}</span>
+        <span class="history-entry-time">${entry.timestamp}</span>
+      </div>
+      <div class="history-entry-matrices">${matPreview}</div>
+    </div>`;
+  }).join('');
+
+  els.historyList.querySelectorAll('.history-entry').forEach(el => {
+    el.addEventListener('click', () => restoreHistory(_history[parseInt(el.dataset.idx, 10)]));
+  });
+}
+
+function openHistoryDrawer() {
+  renderHistoryList();
+  els.historyBackdrop.classList.remove('hidden');
+  requestAnimationFrame(() => els.historyDrawer.classList.add('drawer-open'));
+}
+
+function closeHistoryDrawer() {
+  els.historyDrawer.classList.remove('drawer-open');
+  setTimeout(() => els.historyBackdrop.classList.add('hidden'), 250);
+}
+
+function restoreHistory(entry) {
+  if (!state.textModeA) toggleTextModeA();
+  els.textA.value = entry.matrices[0].value;
+
+  els.resultDisplay.innerHTML = entry.result || '';
+  typesetMath(els.resultDisplay);
+  hideShimmer();
+
+  if (entry.steps && entry.steps.trim()) {
+    renderSteps(entry.steps);
+  } else {
+    clearSteps();
+  }
+
+  state.lastRaw = entry.raw || null;
+  if (state.lastRaw) {
+    els.answerToolbar.classList.remove('hidden');
+  } else {
+    els.answerToolbar.classList.add('hidden');
+  }
+
+  els.opLabel.textContent = entry.label;
+  setStatus('done');
+  closeHistoryDrawer();
+}
 
 function init() {
   // 1. Apply op-group colors and wire accordion toggle with localStorage
@@ -777,8 +883,21 @@ function init() {
     if (e.target === els.equivModal) closeEquivModal();
   });
 
+  // History drawer
+  els.historyBtn.addEventListener('click', openHistoryDrawer);
+  els.closeHistoryBtn.addEventListener('click', closeHistoryDrawer);
+  els.historyBackdrop.addEventListener('click', closeHistoryDrawer);
+  els.clearHistoryBtn.addEventListener('click', () => {
+    _history.length = 0;
+    updateHistoryCount();
+    renderHistoryList();
+  });
+
   // Modal keyboard: Escape closes, Tab is trapped inside
   document.addEventListener('keydown', e => {
+    if (!els.historyBackdrop.classList.contains('hidden')) {
+      if (e.key === 'Escape') { closeHistoryDrawer(); return; }
+    }
     if (els.equivModal.classList.contains('hidden')) return;
     if (e.key === 'Escape') {
       closeEquivModal();
