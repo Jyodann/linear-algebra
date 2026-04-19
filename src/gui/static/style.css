@@ -484,6 +484,31 @@ body {
   min-height: 140px;
 }
 
+/* ── Answer toolbar ─────────────────────────────────────────────────────── */
+.answer-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 12px 12px 0 0;
+}
+
+.btn-copy {
+  height: 24px;
+  padding: 0 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 5px;
+  color: var(--text-sub);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.btn-copy:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
 /* ── Shimmer skeleton ───────────────────────────────────────────────────── */
 .answer-shimmer {
   display: flex;

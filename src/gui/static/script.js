@@ -113,7 +113,9 @@ const els = {
   modsC:    $('modsC'),
   modCT:    $('modCT'),
   modCInv:  $('modCInv'),
-  addM3Btn: $('addM3Btn'),
+  addM3Btn:      $('addM3Btn'),
+  answerToolbar: $('answerToolbar'),
+  copyBtn:       $('copyBtn'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -350,6 +352,8 @@ function showShimmer() {
   els.answerShimmer.classList.remove('hidden');
   els.resultDisplay.classList.add('hidden');
   els.resultDisplay.innerHTML = '';
+  els.answerToolbar.classList.add('hidden');
+  state.lastRaw = null;
 }
 
 function hideShimmer() {
@@ -511,6 +515,12 @@ async function runOperation(op, needs) {
 
     setStatus('done');
     await renderResult(data.result || '<span class="placeholder">No result returned.</span>');
+    state.lastRaw = data.raw || null;
+    if (state.lastRaw) {
+      els.answerToolbar.classList.remove('hidden');
+    } else {
+      els.answerToolbar.classList.add('hidden');
+    }
 
     if (data.steps && data.steps.trim()) {
       renderSteps(data.steps);
@@ -748,6 +758,18 @@ function init() {
       state.currentAbort.abort();
       state.currentAbort = null;
     }
+  });
+
+  // 10. Copy button
+  els.copyBtn.addEventListener('click', () => {
+    if (!state.lastRaw) return;
+    navigator.clipboard.writeText(state.lastRaw).then(() => {
+      els.copyBtn.textContent = '✓ Copied';
+      setTimeout(() => { els.copyBtn.textContent = 'Copy'; }, 500);
+    }).catch(() => {
+      els.copyBtn.textContent = 'Failed';
+      setTimeout(() => { els.copyBtn.textContent = 'Copy'; }, 1000);
+    });
   });
 
   // Close modal on backdrop click
