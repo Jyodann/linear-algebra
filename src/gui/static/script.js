@@ -31,6 +31,7 @@ const OP_LABELS = {
   transition:       'Transition Matrix',
   eval_cases:       'Evaluate Cases',
   find_cases:       'Find Cases',
+  chain_multiply:   'Chain Multiply',
 };
 
 /* ── Status badge config ────────────────────────────────────────────────── */
@@ -48,10 +49,19 @@ const state = {
   rowsB: 2,
   colsB: 1,
   textModeA: false,
-  secondaryMode: null,    // null | 'rhs' | 'rhs-optional' | 'matrix2'
+  secondaryMode: null,    // null | 'rhs' | 'rhs-optional' | 'matrix2' | 'chain'
   stepsCollapsed: false,
   activeOp: null,
   currentAbort: null,     // AbortController for in-flight request
+  rowsC: 2,
+  colsC: 2,
+  lastRaw: null,
+  chain: {
+    modA: { T: false, inv: false },
+    modB: { T: false, inv: false },
+    modC: { T: false, inv: false },
+    showM3: false,
+  },
 };
 
 /* ── DOM references ─────────────────────────────────────────────────────── */
@@ -89,6 +99,21 @@ const els = {
   equivCategory:    $('equivCategory'),
   equivProps:       $('equivProps'),
   equivList:        $('equivList'),
+  modsA:    $('modsA'),
+  modAT:    $('modAT'),
+  modAInv:  $('modAInv'),
+  modsB:    $('modsB'),
+  modBT:    $('modBT'),
+  modBInv:  $('modBInv'),
+  cardC:    $('cardC'),
+  gridC:    $('gridC'),
+  rowsC:    $('rowsC'),
+  colsC:    $('colsC'),
+  updateC:  $('updateC'),
+  modsC:    $('modsC'),
+  modCT:    $('modCT'),
+  modCInv:  $('modCInv'),
+  addM3Btn: $('addM3Btn'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -223,6 +248,11 @@ function toggleTextModeA() {
  * mode: null | 'rhs' | 'rhs-optional' | 'matrix2'
  */
 function showSecondary(mode) {
+  // Deactivate chain UI when switching to non-chain mode
+  if (state.secondaryMode === 'chain' && mode !== 'chain') {
+    configureForChain(false);
+  }
+
   if (state.secondaryMode === mode) {
     if (mode === 'rhs' || mode === 'rhs-optional') {
       if (state.rowsB !== state.rowsA) {
@@ -263,6 +293,14 @@ function showSecondary(mode) {
     els.rowsB.value = state.rowsB;
     els.colsB.value = state.colsB;
     createGrid('gridB', state.rowsB, state.colsB);
+  } else if (mode === 'chain') {
+    els.labelB.textContent = 'Matrix M2';
+    els.hintB.textContent = '';
+    els.dimCtrlB.classList.remove('hidden');
+    els.rowsB.value = state.rowsB;
+    els.colsB.value = state.colsB;
+    createGrid('gridB', state.rowsB, state.colsB);
+    configureForChain(true);
   }
 }
 
@@ -357,6 +395,50 @@ function clearSteps() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Chain multiply helpers
+   ───────────────────────────────────────────────────────────────────────── */
+
+function getModStr(mod) {
+  if (mod.T && mod.inv) return 'inv_T';
+  if (mod.T) return 'T';
+  if (mod.inv) return 'inv';
+  return 'none';
+}
+
+function wireModBtn(btnEl, modObj, key) {
+  btnEl.addEventListener('click', () => {
+    modObj[key] = !modObj[key];
+    btnEl.classList.toggle('active', modObj[key]);
+  });
+}
+
+function resetChainMods() {
+  ['modAT','modAInv','modBT','modBInv','modCT','modCInv'].forEach(id => {
+    const el = $(id);
+    if (el) el.classList.remove('active');
+  });
+  state.chain.modA = { T: false, inv: false };
+  state.chain.modB = { T: false, inv: false };
+  state.chain.modC = { T: false, inv: false };
+}
+
+function configureForChain(active) {
+  if (active) {
+    els.modsA.classList.remove('hidden');
+    els.modsB.classList.remove('hidden');
+    els.addM3Btn.classList.remove('hidden');
+  } else {
+    els.modsA.classList.add('hidden');
+    els.modsB.classList.add('hidden');
+    els.addM3Btn.classList.add('hidden');
+    els.addM3Btn.textContent = '+ Add M3';
+    els.cardC.classList.add('hidden');
+    state.chain.showM3 = false;
+    resetChainMods();
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Core operation handler
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -396,6 +478,14 @@ async function runOperation(op, needs) {
     if (rhsVal) body.rhs = rhsVal;
   } else if (needs === 'matrix2') {
     body.matrix2 = readGrid('gridB', state.rowsB, state.colsB);
+  } else if (needs === 'chain') {
+    body.matrix2 = readGrid('gridB', state.rowsB, state.colsB);
+    if (state.chain.showM3) {
+      body.matrix3 = readGrid('gridC', state.rowsC, state.colsC);
+    }
+    body.mod1 = getModStr(state.chain.modA);
+    body.mod2 = getModStr(state.chain.modB);
+    body.mod3 = getModStr(state.chain.modC);
   }
 
   const controller = new AbortController();
@@ -594,6 +684,42 @@ function init() {
   els.updateB.addEventListener('click', applyDimB);
   els.rowsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
   els.colsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
+
+  // 5b. Chain multiply: modifier buttons
+  wireModBtn(els.modAT,   state.chain.modA, 'T');
+  wireModBtn(els.modAInv, state.chain.modA, 'inv');
+  wireModBtn(els.modBT,   state.chain.modB, 'T');
+  wireModBtn(els.modBInv, state.chain.modB, 'inv');
+  wireModBtn(els.modCT,   state.chain.modC, 'T');
+  wireModBtn(els.modCInv, state.chain.modC, 'inv');
+
+  // Chain multiply: M3 toggle
+  els.addM3Btn.addEventListener('click', () => {
+    state.chain.showM3 = !state.chain.showM3;
+    if (state.chain.showM3) {
+      createGrid('gridC', state.rowsC, state.colsC);
+      els.cardC.classList.remove('hidden');
+      els.addM3Btn.textContent = '× Remove M3';
+    } else {
+      els.cardC.classList.add('hidden');
+      els.addM3Btn.textContent = '+ Add M3';
+      els.modCT.classList.remove('active');
+      els.modCInv.classList.remove('active');
+      state.chain.modC = { T: false, inv: false };
+    }
+  });
+
+  // Chain multiply: Matrix C dim controls
+  els.updateC.addEventListener('click', () => {
+    const r = parseInt(els.rowsC.value, 10);
+    const c = parseInt(els.colsC.value, 10);
+    if (!r || !c || r < 1 || c < 1) return;
+    state.rowsC = r;
+    state.colsC = c;
+    createGrid('gridC', r, c);
+  });
+  els.rowsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
+  els.colsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
 
   // 6. Operation buttons
   opBtns = document.querySelectorAll('.op-btn');

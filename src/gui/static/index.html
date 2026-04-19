@@ -46,6 +46,10 @@
       <div class="input-card" id="cardA">
         <div class="card-header">
           <span class="card-label">Matrix A</span>
+          <div class="chain-mods hidden" id="modsA">
+            <button class="mod-btn" id="modAT">T</button>
+            <button class="mod-btn" id="modAInv">⁻¹</button>
+          </div>
           <div class="dim-controls">
             <input type="number" id="rowsA" value="2" min="1" max="10" aria-label="Rows">
             <span class="dim-sep">×</span>
@@ -74,6 +78,10 @@
       <div class="input-card secondary-card hidden" id="cardB">
         <div class="card-header">
           <span class="card-label" id="labelB">Vector b</span>
+          <div class="chain-mods hidden" id="modsB">
+            <button class="mod-btn" id="modBT">T</button>
+            <button class="mod-btn" id="modBInv">⁻¹</button>
+          </div>
           <div class="dim-controls" id="dimCtrlB">
             <input type="number" id="rowsB" value="2" min="1" max="10" aria-label="Rows B">
             <span class="dim-sep">×</span>
@@ -85,8 +93,42 @@
         <p class="hint" id="hintB"></p>
       </div>
 
+      <!-- Add M3 button (chain multiply only) -->
+      <button class="btn-sm hidden" id="addM3Btn">+ Add M3</button>
+
+      <!-- Matrix M3 (chain multiply optional third matrix) -->
+      <div class="input-card secondary-card hidden" id="cardC">
+        <div class="card-header">
+          <span class="card-label">Matrix M3</span>
+          <div class="chain-mods" id="modsC">
+            <button class="mod-btn" id="modCT">T</button>
+            <button class="mod-btn" id="modCInv">⁻¹</button>
+          </div>
+          <div class="dim-controls" id="dimCtrlC">
+            <input type="number" id="rowsC" value="2" min="1" max="10" aria-label="Rows C">
+            <span class="dim-sep">×</span>
+            <input type="number" id="colsC" value="2" min="1" max="10" aria-label="Cols C">
+            <button class="btn-sm" id="updateC">Set</button>
+          </div>
+        </div>
+        <div id="gridC" class="matrix-grid"></div>
+      </div>
+
       <!-- Operations Accordion -->
       <div class="ops-panel">
+
+        <!-- Arithmetic -->
+        <div class="op-group" data-color="var(--accent-light)">
+          <button class="group-header" type="button" aria-expanded="false">
+            <span class="group-label">Arithmetic</span>
+            <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="group-body">
+            <div class="group-btns">
+              <button class="op-btn" data-op="chain_multiply" data-needs="chain">Chain Multiply</button>
+            </div>
+          </div>
+        </div>
 
         <!-- Row Reduction -->
         <div class="op-group" data-color="var(--accent)">

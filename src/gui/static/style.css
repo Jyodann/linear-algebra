@@ -192,6 +192,27 @@ body {
 .btn-sm-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
 .btn-sm-ghost:hover { background: var(--rose-dim); border-color: var(--rose-border); color: var(--rose); }
 
+/* ── Chain multiply modifier buttons ────────────────────────────────────── */
+.chain-mods { display: flex; align-items: center; gap: 0.25rem; }
+
+.mod-btn {
+  height: 22px;
+  min-width: 28px;
+  padding: 0 0.4rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-sub);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1;
+}
+.mod-btn:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.mod-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* ── Matrix grid ────────────────────────────────────────────────────────── */
 .matrix-grid {
   display: grid;
