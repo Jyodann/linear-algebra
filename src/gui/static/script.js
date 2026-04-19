@@ -26,7 +26,7 @@ const OP_LABELS = {
   extend_basis:     'Extend Basis',
   solve:            'Solve Ax = b',
   least_squares:    'Least Squares',
-  projection:       'Projection [A|b]',
+  projection:       'Projection onto Col(A)',
   intersect:        'Intersect Subspaces',
   transition:       'Transition Matrix',
   eval_cases:       'Evaluate Cases',

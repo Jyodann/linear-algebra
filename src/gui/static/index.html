@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=4">
   <script>
     window.MathJax = {
       tex: {
@@ -233,7 +233,7 @@
             <div class="group-btns">
               <button class="op-btn" data-op="solve" data-needs="rhs">Solve Ax = b</button>
               <button class="op-btn steps-badge" data-op="least_squares" data-needs="rhs">Least Squares</button>
-              <button class="op-btn steps-badge" data-op="projection" data-needs="">Projection [A|b]</button>
+              <button class="op-btn steps-badge" data-op="projection" data-needs="rhs">Projection onto Col(A)</button>
             </div>
           </div>
         </div>
@@ -353,6 +353,6 @@
     <div class="history-drawer-body" id="historyList"></div>
   </aside>
 
-  <script src="/static/script.js?v=3"></script>
+  <script src="/static/script.js?v=4"></script>
 </body>
 </html>

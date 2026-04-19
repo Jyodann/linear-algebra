@@ -346,20 +346,25 @@ async def process_matrix(request: Request):
 
             elif operation == "least_squares":
                 b_vec = b if b is not None else _zero_col_vector(A.rows)
-                res, steps_raw = capture(lambda: A.solve_least_squares(b_vec, verbosity=1))
+                try:
+                    res, steps_raw = capture(lambda: A.solve_least_squares(b_vec, verbosity=1))
+                except (IndexError, KeyError):
+                    # sym.solve returned empty list (AᵀA singular, underdetermined normal eqs)
+                    # Fall back to pseudoinverse minimum-norm solution
+                    res = A.pinv() @ b_vec
+                    steps_raw = ""
                 result = f"\\( \\hat{{x}} = {sym.latex(res)} \\)"
                 raw = matrix_to_raw(res)
 
             elif operation == "projection":
-                if A.cols < 2:
-                    return None, None, None, "Matrix must have at least 2 columns (augmented [A|b])"
-                Acols = A.select_cols(*range(A.cols - 1))
-                b_col = A.select_cols(A.cols - 1)
-                res, steps_raw = capture(
-                    lambda: Acols.solve_least_squares(b_col, verbosity=1)
-                )
+                b_vec = b if b is not None else _zero_col_vector(A.rows)
+                try:
+                    res, steps_raw = capture(lambda: A.solve_least_squares(b_vec, verbosity=1))
+                except (IndexError, KeyError):
+                    res = A.pinv() @ b_vec
+                    steps_raw = ""
                 x_hat = res
-                p = Acols @ x_hat
+                p = A @ x_hat
                 result = (
                     f"\\( \\hat{{x}} = {sym.latex(x_hat)}, \\quad "
                     f"p = A\\hat{{x}} = {sym.latex(p)} \\)"
