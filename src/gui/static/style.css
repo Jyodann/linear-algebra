@@ -459,7 +459,7 @@ body {
   background: var(--surface);
   border-radius: 12px;
   box-shadow: var(--shadow-md);
-  overflow: hidden;
+  overflow: visible;
   min-height: 140px;
 }
 
@@ -488,7 +488,7 @@ body {
 /* ── Result body ────────────────────────────────────────────────────────── */
 .result-body {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   min-height: 140px;
   padding: 2rem 2.5rem;
@@ -702,7 +702,7 @@ body {
 
 /* ── Utilities ──────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
-mjx-container { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+mjx-container { overflow-x: auto; overflow-y: visible; max-width: 100%; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 1023px) {
