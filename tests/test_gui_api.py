@@ -69,6 +69,28 @@ def test_eigenvals_with_decimals():
     assert "error" not in data
     assert "3/2" in data["result"] or "1.5" in data["result"] or r"\frac{3}{2}" in data["result"]
 
+def test_raw_field_single_matrix():
+    response = client.post(
+        "/api/process",
+        json={"matrix": "[[1, 2], [3, 4]]", "operation": "rref"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "raw" in data
+    assert data["raw"].startswith("[")
+
+def test_raw_field_decomposition():
+    response = client.post(
+        "/api/process",
+        json={"matrix": "[[1, 2], [3, 4]]", "operation": "lu"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "raw" in data
+    assert "P=" in data["raw"]
+    assert "L=" in data["raw"]
+    assert "U=" in data["raw"]
+
 if __name__ == "__main__":
     try:
         test_rref()

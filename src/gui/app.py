@@ -59,6 +59,13 @@ def capture(fn):
             result = fn()
     return result, buf.getvalue()
 
+def matrix_to_raw(M) -> str:
+    """Convert a Matrix to '[r0c0 r0c1; r1c0 r1c1]' format (from_str-compatible)."""
+    rows = []
+    for r in range(M.rows):
+        rows.append(' '.join(str(M[r, c]) for c in range(M.cols)))
+    return '[' + '; '.join(rows) + ']'
+
 def steps_html(raw: str) -> str:
     """Convert captured stdout (LaTeX-based) to HTML step cards."""
     lines = raw.splitlines()
@@ -159,6 +166,7 @@ async def process_matrix(request: Request):
             """All heavy CPU work runs here — in the thread pool, so the event loop is free."""
             result = ""
             steps_raw = ""
+            raw = ""
 
             # ------------------------------------------------------------------
             # Row Reduction
@@ -168,10 +176,12 @@ async def process_matrix(request: Request):
                     warnings.simplefilter("ignore", UserWarning)
                     res = A.rref()
                 result = f"\\[ {sym.latex(res[0])} \\]"
+                raw = matrix_to_raw(res[0])
 
             elif operation == "ref":
                 res, steps_raw = capture(lambda: A.ref(verbosity=2))
                 result = f"\\[ {sym.latex(res.U)} \\]"
+                raw = matrix_to_raw(res.U)
 
             # ------------------------------------------------------------------
             # Factorizations
@@ -183,6 +193,7 @@ async def process_matrix(request: Request):
                     f"L = {sym.latex(res.L)}, \\quad "
                     f"U = {sym.latex(res.U)} \\)"
                 )
+                raw = f"P={matrix_to_raw(res.P)}\nL={matrix_to_raw(res.L)}\nU={matrix_to_raw(res.U)}"
 
             elif operation == "qr":
                 _, steps_raw = capture(lambda: A.gram_schmidt(verbosity=1))
@@ -190,10 +201,12 @@ async def process_matrix(request: Request):
                 result = (
                     f"\\( Q = {sym.latex(Q)}, \\quad R = {sym.latex(R)} \\)"
                 )
+                raw = f"Q={matrix_to_raw(Q)}\nR={matrix_to_raw(R)}"
 
             elif operation == "gram_schmidt":
                 gs_result, steps_raw = capture(lambda: A.gram_schmidt(verbosity=1))
                 result = f"\\[ {sym.latex(gs_result)} \\]"
+                raw = matrix_to_raw(gs_result)
 
             elif operation == "svd":
                 res = A.singular_value_decomposition(verbosity=0)
@@ -202,6 +215,7 @@ async def process_matrix(request: Request):
                     f"\\Sigma = {sym.latex(res.S)}, \\quad "
                     f"V^T = {sym.latex(res.V)} \\)"
                 )
+                raw = f"U={matrix_to_raw(res.U)}\nS={matrix_to_raw(res.S)}\nV={matrix_to_raw(res.V)}"
 
             # ------------------------------------------------------------------
             # Properties
@@ -209,10 +223,12 @@ async def process_matrix(request: Request):
             elif operation == "det":
                 d = A.det()
                 result = f"\\( \\det(A) = {sym.latex(d)} \\)"
+                raw = str(d)
 
             elif operation == "inv":
                 res, steps_raw = capture(lambda: A.inverse(option="right", verbosity=1))
                 result = f"\\( A^{{-1}} = {sym.latex(res)} \\)"
+                raw = matrix_to_raw(res)
 
             elif operation == "rank":
                 with warnings.catch_warnings():
@@ -220,6 +236,7 @@ async def process_matrix(request: Request):
                     r = A.rank()
                 nullity = A.cols - r
                 result = f"\\( \\mathrm{{rank}}(A) = {r}, \\quad \\mathrm{{nullity}}(A) = {nullity} \\)"
+                raw = f"rank={r}\nnullity={nullity}"
 
             # ------------------------------------------------------------------
             # Eigen Analysis
@@ -231,6 +248,7 @@ async def process_matrix(request: Request):
                     for val, mult in evals.items()
                 ]
                 result = "\\[ " + ", \\quad ".join(parts) + " \\]"
+                raw = ', '.join(str(v) for v in evals.keys())
 
             elif operation == "eigenvects":
                 evects = A.eigenvects()
@@ -242,18 +260,21 @@ async def process_matrix(request: Request):
                         f"\\left[ {vec_strs} \\right]"
                     )
                 result = "\\[ " + " \\\\[6pt] ".join(parts) + " \\]"
+                raw = ""
 
             elif operation == "diagonalize":
                 res, steps_raw = capture(lambda: A.diagonalize(verbosity=1))
                 result = (
                     f"\\( P = {sym.latex(res.P)}, \\quad D = {sym.latex(res.D)} \\)"
                 )
+                raw = f"P={matrix_to_raw(res.P)}\nD={matrix_to_raw(res.D)}"
 
             elif operation == "orth_diagonalize":
                 res, steps_raw = capture(lambda: A.orthogonally_diagonalize(verbosity=1))
                 result = (
                     f"\\( P = {sym.latex(res.P)}, \\quad D = {sym.latex(res.D)} \\)"
                 )
+                raw = f"P={matrix_to_raw(res.P)}\nD={matrix_to_raw(res.D)}"
 
             # ------------------------------------------------------------------
             # Vector Spaces
@@ -264,11 +285,13 @@ async def process_matrix(request: Request):
                     ns = A.nullspace()
                 if not ns:
                     result = f"\\( \\mathrm{{Null}}(A) = \\{{0\\}} \\)"
+                    raw = ""
                 else:
                     vecs = ", ".join(sym.latex(v) for v in ns)
                     result = (
                         f"\\( \\mathrm{{Null}}(A) = \\operatorname{{span}}\\{{ {vecs} \\}} \\)"
                     )
+                    raw = '\n'.join(matrix_to_raw(v) for v in ns)
 
             elif operation == "colspace":
                 with warnings.catch_warnings():
@@ -278,20 +301,24 @@ async def process_matrix(request: Request):
                 result = (
                     f"\\( \\mathrm{{Col}}(A) = \\operatorname{{span}}\\{{ {vecs} \\}} \\)"
                 )
+                raw = '\n'.join(matrix_to_raw(v) for v in cs)
 
             elif operation == "orth_complement":
                 res, steps_raw = capture(lambda: A.orthogonal_complement(verbosity=1))
                 result = (
                     f"\\( (\\mathrm{{Col}}(A))^\\perp = {sym.latex(res)} \\)"
                 )
+                raw = matrix_to_raw(res)
 
             elif operation == "col_constraints":
                 res, steps_raw = capture(lambda: A.column_constraints(verbosity=1))
                 result = f"\\[ {sym.latex(res)} \\]"
+                raw = matrix_to_raw(res)
 
             elif operation == "extend_basis":
                 res, steps_raw = capture(lambda: A.extend_basis(verbosity=2))
                 result = f"\\[ {sym.latex(res)} \\]"
+                raw = matrix_to_raw(res)
 
             # ------------------------------------------------------------------
             # Linear Systems
@@ -301,17 +328,20 @@ async def process_matrix(request: Request):
                 try:
                     sol = A.solve(b_vec)
                     result = f"\\[ {sym.latex(sol)} \\]"
+                    raw = matrix_to_raw(sol)
                 except ValueError:
                     result = "No solution"
+                    raw = ""
 
             elif operation == "least_squares":
                 b_vec = b if b is not None else _zero_col_vector(A.rows)
                 res, steps_raw = capture(lambda: A.solve_least_squares(b_vec, verbosity=1))
                 result = f"\\( \\hat{{x}} = {sym.latex(res)} \\)"
+                raw = matrix_to_raw(res)
 
             elif operation == "projection":
                 if A.cols < 2:
-                    return None, None, "Matrix must have at least 2 columns (augmented [A|b])"
+                    return None, None, None, "Matrix must have at least 2 columns (augmented [A|b])"
                 Acols = A.select_cols(*range(A.cols - 1))
                 b_col = A.select_cols(A.cols - 1)
                 res, steps_raw = capture(
@@ -323,23 +353,26 @@ async def process_matrix(request: Request):
                     f"\\( \\hat{{x}} = {sym.latex(x_hat)}, \\quad "
                     f"p = A\\hat{{x}} = {sym.latex(p)} \\)"
                 )
+                raw = f"x_hat={matrix_to_raw(x_hat)}\np={matrix_to_raw(p)}"
 
             # ------------------------------------------------------------------
             # Subspaces
             # ------------------------------------------------------------------
             elif operation == "intersect":
                 if B is None:
-                    return None, None, "This operation requires a second matrix (matrix2)."
+                    return None, None, None, "This operation requires a second matrix (matrix2)."
                 res, steps_raw = capture(lambda: A.intersect_subspace(B, verbosity=2))
                 result = f"\\[ {sym.latex(res)} \\]"
+                raw = matrix_to_raw(res)
 
             elif operation == "transition":
                 if B is None:
-                    return None, None, "This operation requires a second matrix (matrix2)."
+                    return None, None, None, "This operation requires a second matrix (matrix2)."
                 res, steps_raw = capture(lambda: A.transition_matrix(B, verbosity=2))
                 result = (
                     f"\\( P_{{B \\leftarrow A}} = {sym.latex(res)} \\)"
                 )
+                raw = matrix_to_raw(res)
 
             # ------------------------------------------------------------------
             # Symbolic / Parametric
@@ -348,6 +381,7 @@ async def process_matrix(request: Request):
                 b_vec = b if b is not None else _zero_col_vector(A.rows)
                 _, steps_raw = capture(lambda: A.evaluate_cases(b_vec))
                 result = "See steps below."
+                raw = ""
 
             elif operation == "find_cases":
                 cases = A.find_all_cases()
@@ -362,14 +396,15 @@ async def process_matrix(request: Request):
                             "\\}"
                         )
                     result = "\\[ " + ", \\quad ".join(parts) + " \\]"
+                raw = ""
 
             else:
-                return None, None, f"Unknown operation: {operation}"
+                return None, None, None, f"Unknown operation: {operation}"
 
-            return result, steps_raw, None  # (result, steps, error)
+            return result, steps_raw, raw, None  # (result, steps, raw, error)
 
         try:
-            result, steps_raw, err = await asyncio.wait_for(
+            result, steps_raw, raw, err = await asyncio.wait_for(
                 loop.run_in_executor(_executor, compute),
                 timeout=COMPUTE_TIMEOUT,
             )
@@ -383,7 +418,7 @@ async def process_matrix(request: Request):
             return JSONResponse(content={"error": err}, status_code=400)
 
         steps = steps_html(steps_raw) if steps_raw and steps_raw.strip() else ""
-        return JSONResponse(content={"result": result, "steps": steps})
+        return JSONResponse(content={"result": result, "steps": steps, "raw": raw or ""})
 
     except Exception as e:
         traceback.print_exc()
