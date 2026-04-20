@@ -118,7 +118,6 @@ const els = {
   modsC:    $('modsC'),
   modSegC:  $('modSegC'),
   addM3Btn:        $('addM3Btn'),
-  answerToolbar:   $('answerToolbar'),
   copyBtn:         $('copyBtn'),
   inputSummary:    $('inputSummary'),
   inputDisplay:    $('inputDisplay'),
@@ -467,7 +466,7 @@ function showShimmer() {
   els.answerShimmer.classList.remove('hidden');
   els.resultDisplay.classList.add('hidden');
   els.resultDisplay.innerHTML = '';
-  els.answerToolbar.classList.add('hidden');
+  els.copyBtn.classList.add('hidden');
   els.inputSummary.classList.add('hidden');
   els.inputDisplay.innerHTML = '';
   els.copyBtn.textContent = 'Copy';
@@ -643,7 +642,7 @@ async function runOperation() {
     setStatus('done');
     await renderResult(data.result || '<span class="placeholder">No result returned.</span>');
     state.lastRaw = data.raw || null;
-    els.answerToolbar.classList.toggle('hidden', !state.lastRaw);
+    els.copyBtn.classList.toggle('hidden', !state.lastRaw);
 
     if (data.input_latex) {
       els.inputDisplay.innerHTML = data.input_latex;
@@ -871,7 +870,7 @@ function restoreHistory(entry) {
   else clearSteps();
 
   state.lastRaw = entry.raw || null;
-  els.answerToolbar.classList.toggle('hidden', !state.lastRaw);
+  els.copyBtn.classList.toggle('hidden', !state.lastRaw);
 
   opBtns.forEach(b => b.classList.remove('active'));
   state.activeOp = entry.op;

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=7">
+  <link rel="stylesheet" href="/static/style.css?v=8">
   <script>
     window.MathJax = {
       tex: {
@@ -308,10 +308,25 @@
       <!-- Single scrollable content area -->
       <div class="result-scroll">
 
+        <!-- Input summary (shown after computation) -->
+        <div class="result-card hidden" id="inputSummary">
+          <div class="result-card-header">
+            <div class="result-card-title-group">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 3h10M2 7h7M2 11h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <span class="result-card-title input-title">Input</span>
+            </div>
+          </div>
+          <div id="inputDisplay" class="result-card-body input-body"></div>
+        </div>
+
         <!-- Answer card -->
-        <div class="answer-card">
-          <div class="answer-toolbar hidden" id="answerToolbar">
-            <button class="btn-copy" id="copyBtn">Copy</button>
+        <div class="result-card answer-card">
+          <div class="result-card-header">
+            <div class="result-card-title-group">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="result-card-title answer-title">Result</span>
+            </div>
+            <button class="btn-copy hidden" id="copyBtn">Copy</button>
           </div>
           <div class="answer-shimmer hidden" id="answerShimmer">
             <div class="shimmer-block"></div>
@@ -321,18 +336,12 @@
           </div>
         </div>
 
-        <!-- Input summary (shown after computation) -->
-        <div class="input-summary hidden" id="inputSummary">
-          <div class="input-summary-label">Input</div>
-          <div id="inputDisplay" class="input-summary-body"></div>
-        </div>
-
         <!-- Working steps (inline section, expands freely) -->
-        <div class="steps-section hidden" id="stepsCard">
-          <div class="steps-section-header">
-            <div class="steps-title-group">
+        <div class="result-card steps-section hidden" id="stepsCard">
+          <div class="result-card-header">
+            <div class="result-card-title-group">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 3.5h12M1 7h12M1 10.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-              <span class="steps-title">Working Steps</span>
+              <span class="result-card-title steps-title">Working Steps</span>
             </div>
             <button class="collapse-btn" id="toggleSteps" aria-expanded="true">
               <span id="toggleStepsLabel">Hide steps</span>
@@ -444,6 +453,6 @@
     </div>
   </div>
 
-  <script src="/static/script.js?v=7"></script>
+  <script src="/static/script.js?v=8"></script>
 </body>
 </html>

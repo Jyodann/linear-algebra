@@ -539,23 +539,50 @@ body {
 .result-scroll::-webkit-scrollbar { width: 5px; }
 .result-scroll::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
 
-/* ── Answer card ────────────────────────────────────────────────────────── */
-.answer-card {
+/* ── Unified result cards ────────────────────────────────────────────────── */
+.result-card {
   background: var(--surface);
   border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.answer-card {
   box-shadow: var(--shadow-md);
-  overflow: visible;
   min-height: 140px;
 }
 
-/* ── Answer toolbar ─────────────────────────────────────────────────────── */
-.answer-toolbar {
+.result-card-header {
   display: flex;
-  justify-content: flex-end;
-  padding: 0.4rem 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.25rem;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
-  border-radius: 12px 12px 0 0;
+}
+.result-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.result-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.input-title  { color: var(--accent); }
+.answer-title { color: var(--green); }
+.steps-title  { color: var(--amber); }
+
+.result-card-body {
+  padding: 0.75rem 1.5rem;
+  overflow-x: auto;
+}
+.input-body {
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.7;
 }
 
 .btn-copy {
@@ -620,54 +647,7 @@ body {
   line-height: 1.55;
 }
 
-/* ── Input summary ──────────────────────────────────────────────────────── */
-.input-summary {
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-.input-summary-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  padding: 0.5rem 1.25rem;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
-}
-.input-summary-body {
-  padding: 0.5rem 1.25rem;
-  font-size: 0.88rem;
-  overflow-x: auto;
-  text-align: center;
-}
-
 /* ── Steps section ──────────────────────────────────────────────────────── */
-.steps-section {
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-}
-.steps-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.65rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-}
-.steps-title-group { display: flex; align-items: center; gap: 0.5rem; }
-.steps-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--amber);
-}
 .collapse-btn {
   background: none;
   border: 1px solid var(--border);
