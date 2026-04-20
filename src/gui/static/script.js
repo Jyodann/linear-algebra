@@ -44,17 +44,17 @@ const STATUS_CONFIG = {
 
 /* ── State ──────────────────────────────────────────────────────────────── */
 const state = {
-  rowsA: 2,
-  colsA: 2,
-  rowsB: 2,
-  colsB: 1,
+  rowsA: 2, colsA: 2,
+  rowsB: 2, colsB: 1,
+  rowsC: 2, colsC: 2,
   textModeA: false,
+  textModeB: false,
+  textModeC: false,
   secondaryMode: null,    // null | 'rhs' | 'rhs-optional' | 'matrix2' | 'chain'
   stepsCollapsed: false,
   activeOp: null,
-  currentAbort: null,     // AbortController for in-flight request
-  rowsC: 2,
-  colsC: 2,
+  activeNeeds: null,
+  currentAbort: null,
   lastRaw: null,
   chain: {
     modA: { T: false, inv: false },
@@ -83,8 +83,20 @@ const els = {
   colsB:            $('colsB'),
   updateB:          $('updateB'),
   gridB:            $('gridB'),
+  textWrapB:        $('textWrapB'),
+  textB:            $('textB'),
+  toggleModeB:      $('toggleModeB'),
   hintB:            $('hintB'),
+  cardC:            $('cardC'),
+  gridC:            $('gridC'),
+  textWrapC:        $('textWrapC'),
+  textC:            $('textC'),
+  toggleModeC:      $('toggleModeC'),
+  rowsC:            $('rowsC'),
+  colsC:            $('colsC'),
+  updateC:          $('updateC'),
   opLabel:          $('opLabel'),
+  computeBtn:       $('computeBtn'),
   statusBadge:      $('statusBadge'),
   cancelBtn:        $('cancelBtn'),
   answerShimmer:    $('answerShimmer'),
@@ -103,14 +115,9 @@ const els = {
   modSegA:  $('modSegA'),
   modsB:    $('modsB'),
   modSegB:  $('modSegB'),
-  cardC:    $('cardC'),
-  gridC:    $('gridC'),
-  rowsC:    $('rowsC'),
-  colsC:    $('colsC'),
-  updateC:  $('updateC'),
   modsC:    $('modsC'),
   modSegC:  $('modSegC'),
-  addM3Btn:      $('addM3Btn'),
+  addM3Btn:        $('addM3Btn'),
   answerToolbar:   $('answerToolbar'),
   copyBtn:         $('copyBtn'),
   historyBtn:      $('historyBtn'),
@@ -123,13 +130,48 @@ const els = {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Backend parse helper
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** Call /api/parse; returns {rows, cols, cells} or null on error. */
+async function fetchParse(text) {
+  try {
+    const resp = await fetch('/api/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matrix: text }),
+    });
+    const data = await resp.json();
+    if (data.error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Populate a grid with parsed cell data from fetchParse.
+ * Updates state dims. Does NOT switch text/grid mode.
+ */
+function populateGrid(gridId, data, rowKey, colKey, rowInput, colInput) {
+  state[rowKey] = data.rows;
+  state[colKey] = data.cols;
+  if (rowInput) rowInput.value = data.rows;
+  if (colInput) colInput.value = data.cols;
+  createGrid(gridId, data.rows, data.cols);
+  const container = $(gridId);
+  data.cells.forEach((row, r) => {
+    row.forEach((val, c) => {
+      const cell = container.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+      if (cell) cell.value = val;
+    });
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Grid helpers
    ───────────────────────────────────────────────────────────────────────── */
 
-/**
- * Build a rows×cols input grid inside `containerId`.
- * Sets grid-template-columns and appends .grid-cell inputs.
- */
 function createGrid(containerId, rows, cols) {
   const container = $(containerId);
   container.innerHTML = '';
@@ -146,9 +188,6 @@ function createGrid(containerId, rows, cols) {
       input.autocomplete = 'off';
       input.spellcheck = false;
 
-      // Navigation: Enter moves down, arrows move in all 4 directions.
-      // preventDefault only fires when a target exists, so default caret
-      // movement within a cell is preserved at grid boundaries.
       input.addEventListener('keydown', e => {
         const dirs = {
           Enter:       [1,  0],
@@ -170,10 +209,6 @@ function createGrid(containerId, rows, cols) {
   }
 }
 
-/**
- * Read a grid into "[v00 v01; v10 v11]" format (Matrix.from_str compatible).
- * Empty cells become "0".
- */
 function readGrid(containerId, rows, cols) {
   const container = $(containerId);
   const rowStrs = [];
@@ -189,7 +224,6 @@ function readGrid(containerId, rows, cols) {
   return '[' + rowStrs.join('; ') + ']';
 }
 
-/** Zero-fill all grid cells. */
 function clearGrid(containerId) {
   const container = $(containerId);
   container.querySelectorAll('.grid-cell').forEach(c => { c.value = ''; });
@@ -199,9 +233,7 @@ function clearGrid(containerId) {
    Matrix A management
    ───────────────────────────────────────────────────────────────────────── */
 
-function initGridA() {
-  createGrid('gridA', state.rowsA, state.colsA);
-}
+function initGridA() { createGrid('gridA', state.rowsA, state.colsA); }
 
 function syncDimInputsA() {
   els.rowsA.value = state.rowsA;
@@ -215,8 +247,6 @@ function applyDimA() {
   state.rowsA = r;
   state.colsA = c;
   createGrid('gridA', r, c);
-
-  // Auto-sync rowsB when in rhs / rhs-optional mode
   if (state.secondaryMode === 'rhs' || state.secondaryMode === 'rhs-optional') {
     state.rowsB = r;
     els.rowsB.value = r;
@@ -224,24 +254,93 @@ function applyDimA() {
   }
 }
 
-/** Read the current Matrix A string (grid or text mode). */
 function getMatrixA() {
-  if (state.textModeA) {
-    return els.textA.value.trim();
-  }
+  if (state.textModeA) return els.textA.value.trim();
   return readGrid('gridA', state.rowsA, state.colsA);
 }
 
-/** Toggle grid ↔ text mode for Matrix A. */
-function toggleTextModeA() {
-  state.textModeA = !state.textModeA;
+/** Toggle grid ↔ text mode for Matrix A.
+ *  text→grid: parse via backend and populate grid cells. */
+async function toggleTextModeA() {
   if (state.textModeA) {
+    // text → grid: parse and populate
+    const text = els.textA.value.trim();
+    if (text) {
+      const data = await fetchParse(text);
+      if (data) {
+        populateGrid('gridA', data, 'rowsA', 'colsA', els.rowsA, els.colsA);
+      }
+    }
+    state.textModeA = false;
+    els.textWrapA.classList.add('hidden');
+    els.gridA.classList.remove('hidden');
+  } else {
+    // grid → text
+    state.textModeA = true;
     els.textA.value = readGrid('gridA', state.rowsA, state.colsA);
     els.gridA.classList.add('hidden');
     els.textWrapA.classList.remove('hidden');
+    els.textA.focus();
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Matrix B management
+   ───────────────────────────────────────────────────────────────────────── */
+
+function getMatrixB() {
+  if (state.textModeB) return els.textB.value.trim();
+  return readGrid('gridB', state.rowsB, state.colsB);
+}
+
+async function toggleTextModeB() {
+  if (state.textModeB) {
+    const text = els.textB.value.trim();
+    if (text) {
+      const data = await fetchParse(text);
+      if (data) {
+        populateGrid('gridB', data, 'rowsB', 'colsB', els.rowsB, els.colsB);
+      }
+    }
+    state.textModeB = false;
+    els.textWrapB.classList.add('hidden');
+    els.gridB.classList.remove('hidden');
   } else {
-    els.textWrapA.classList.add('hidden');
-    els.gridA.classList.remove('hidden');
+    state.textModeB = true;
+    els.textB.value = readGrid('gridB', state.rowsB, state.colsB);
+    els.gridB.classList.add('hidden');
+    els.textWrapB.classList.remove('hidden');
+    els.textB.focus();
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Matrix C management
+   ───────────────────────────────────────────────────────────────────────── */
+
+function getMatrixC() {
+  if (state.textModeC) return els.textC.value.trim();
+  return readGrid('gridC', state.rowsC, state.colsC);
+}
+
+async function toggleTextModeC() {
+  if (state.textModeC) {
+    const text = els.textC.value.trim();
+    if (text) {
+      const data = await fetchParse(text);
+      if (data) {
+        populateGrid('gridC', data, 'rowsC', 'colsC', els.rowsC, els.colsC);
+      }
+    }
+    state.textModeC = false;
+    els.textWrapC.classList.add('hidden');
+    els.gridC.classList.remove('hidden');
+  } else {
+    state.textModeC = true;
+    els.textC.value = readGrid('gridC', state.rowsC, state.colsC);
+    els.gridC.classList.add('hidden');
+    els.textWrapC.classList.remove('hidden');
+    els.textC.focus();
   }
 }
 
@@ -249,14 +348,16 @@ function toggleTextModeA() {
    Secondary input (cardB)
    ───────────────────────────────────────────────────────────────────────── */
 
-/**
- * Show or hide cardB, configuring label, hint, and dim controls.
- * mode: null | 'rhs' | 'rhs-optional' | 'matrix2'
- */
 function showSecondary(mode) {
-  // Deactivate chain UI when switching to non-chain mode
   if (state.secondaryMode === 'chain' && mode !== 'chain') {
     configureForChain(false);
+  }
+
+  // Reset text mode for B when mode changes
+  if (state.secondaryMode !== mode && state.textModeB) {
+    state.textModeB = false;
+    els.textWrapB.classList.add('hidden');
+    els.gridB.classList.remove('hidden');
   }
 
   if (state.secondaryMode === mode) {
@@ -324,13 +425,18 @@ function getSecondaryValue() {
   const mode = state.secondaryMode;
   if (!mode) return null;
 
-  const raw = readGrid('gridB', state.rowsB, state.colsB);
+  const raw = getMatrixB();
 
   if (mode === 'rhs-optional') {
-    const allEmpty = Array.from(
-      els.gridB.querySelectorAll('.grid-cell')
-    ).every(c => c.value.trim() === '');
-    if (allEmpty) return null;
+    // Check if text mode has content, or grid is all empty
+    if (state.textModeB) {
+      if (!raw) return null;
+    } else {
+      const allEmpty = Array.from(
+        els.gridB.querySelectorAll('.grid-cell')
+      ).every(c => c.value.trim() === '');
+      if (allEmpty) return null;
+    }
   }
 
   return raw;
@@ -366,7 +472,6 @@ function hideShimmer() {
   els.resultDisplay.classList.remove('hidden');
 }
 
-/** Typeset MathJax inside a container, no-op if MathJax not loaded. */
 async function typesetMath(container) {
   if (window.MathJax && MathJax.typesetPromise) {
     await MathJax.typesetPromise([container]).catch(console.error);
@@ -407,14 +512,12 @@ function clearSteps() {
    Chain multiply helpers
    ───────────────────────────────────────────────────────────────────────── */
 
-/** Read the active modifier from a segment control. */
 function getChainMod(segEl) {
   if (!segEl) return 'none';
   const active = segEl.querySelector('.mod-seg-btn.active');
   return active ? active.dataset.mod : 'none';
 }
 
-/** Reset all three segment controls to "none". */
 function resetChainMods() {
   [els.modSegA, els.modSegB, els.modSegC].forEach(seg => {
     if (!seg) return;
@@ -442,29 +545,44 @@ function configureForChain(active) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Select operation (without running)
+   ───────────────────────────────────────────────────────────────────────── */
+
+function selectOp(op, needs) {
+  opBtns.forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`[data-op="${op}"]`);
+  if (btn) btn.classList.add('active');
+
+  state.activeOp = op;
+  state.activeNeeds = needs || null;
+  els.opLabel.textContent = OP_LABELS[op] || op;
+  showSecondary(needs || null);
+  els.computeBtn.disabled = false;
+  els.computeBtn.title = `Run ${OP_LABELS[op] || op}`;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Core operation handler
    ───────────────────────────────────────────────────────────────────────── */
 
 let _opGeneration = 0;
 
-async function runOperation(op, needs) {
+async function runOperation() {
+  const op    = state.activeOp;
+  const needs = state.activeNeeds;
+
+  if (!op) return;
+
   if (state.currentAbort) {
     state.currentAbort.abort();
     state.currentAbort = null;
   }
   const myGen = ++_opGeneration;
 
-  opBtns.forEach(b => b.classList.remove('active'));
-  const btn = document.querySelector(`[data-op="${op}"]`);
-  if (btn) btn.classList.add('active');
-
-  state.activeOp = op;
-  els.opLabel.textContent = OP_LABELS[op] || op;
   setStatus('computing');
   clearSteps();
   showShimmer();
-
-  showSecondary(needs || null);
+  els.computeBtn.disabled = true;
 
   const body = { operation: op };
 
@@ -472,6 +590,7 @@ async function runOperation(op, needs) {
   if (!matA) {
     setStatus('error');
     await renderResult('<div class="error-message">Matrix A is empty.</div>');
+    els.computeBtn.disabled = false;
     return;
   }
   body.matrix = matA;
@@ -480,11 +599,11 @@ async function runOperation(op, needs) {
     const rhsVal = getSecondaryValue();
     if (rhsVal) body.rhs = rhsVal;
   } else if (needs === 'matrix2') {
-    body.matrix2 = readGrid('gridB', state.rowsB, state.colsB);
+    body.matrix2 = getMatrixB();
   } else if (needs === 'chain') {
-    body.matrix2 = readGrid('gridB', state.rowsB, state.colsB);
+    body.matrix2 = getMatrixB();
     if (state.chain.showM3) {
-      body.matrix3 = readGrid('gridC', state.rowsC, state.colsC);
+      body.matrix3 = getMatrixC();
     }
     body.mod1 = getChainMod(els.modSegA);
     body.mod2 = getChainMod(els.modSegB);
@@ -506,6 +625,8 @@ async function runOperation(op, needs) {
     if (myGen !== _opGeneration) return;
     const data = await resp.json();
 
+    els.computeBtn.disabled = false;
+
     if (data.error) {
       setStatus('error');
       await renderResult(`<div class="error-message">Could not compute \u2014 ${escapeHtml(data.error)}</div>`);
@@ -515,11 +636,7 @@ async function runOperation(op, needs) {
     setStatus('done');
     await renderResult(data.result || '<span class="placeholder">No result returned.</span>');
     state.lastRaw = data.raw || null;
-    if (state.lastRaw) {
-      els.answerToolbar.classList.remove('hidden');
-    } else {
-      els.answerToolbar.classList.add('hidden');
-    }
+    els.answerToolbar.classList.toggle('hidden', !state.lastRaw);
 
     // Record history
     const histMatrices = [{ label: 'A', value: getMatrixA() }];
@@ -527,20 +644,18 @@ async function runOperation(op, needs) {
       const rhsVal = getSecondaryValue();
       if (rhsVal) histMatrices.push({ label: 'b', value: rhsVal });
     } else if (needs === 'matrix2') {
-      histMatrices.push({ label: 'B', value: readGrid('gridB', state.rowsB, state.colsB) });
+      histMatrices.push({ label: 'B', value: getMatrixB() });
     } else if (needs === 'chain') {
-      histMatrices.push({ label: 'M2', value: readGrid('gridB', state.rowsB, state.colsB) });
-      if (state.chain.showM3) {
-        histMatrices.push({ label: 'M3', value: readGrid('gridC', state.rowsC, state.colsC) });
-      }
+      histMatrices.push({ label: 'M2', value: getMatrixB() });
+      if (state.chain.showM3) histMatrices.push({ label: 'M3', value: getMatrixC() });
     }
     addToHistory(op, OP_LABELS[op] || op, histMatrices, data.result || '', data.steps || '', data.raw || '');
 
-    if (data.steps && data.steps.trim()) {
-      renderSteps(data.steps);
-    }
+    if (data.steps && data.steps.trim()) renderSteps(data.steps);
+
   } catch (err) {
     state.currentAbort = null;
+    els.computeBtn.disabled = false;
     if (err.name === 'AbortError') {
       if (myGen !== _opGeneration) return;
       els.resultDisplay.innerHTML = '<p class="placeholder">Cancelled. Select an operation from the left panel.</p>';
@@ -563,7 +678,6 @@ let _closeTimer   = null;
 let _modalOpener  = null;
 let _modalFocusable = [];
 
-/** Collect all keyboard-focusable elements inside a container. */
 function getFocusable(container) {
   return Array.from(container.querySelectorAll(
     'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -572,10 +686,7 @@ function getFocusable(container) {
 
 async function openEquivModal() {
   const matA = getMatrixA();
-  if (!matA) {
-    alert('Please enter a matrix first.');
-    return;
-  }
+  if (!matA) { alert('Please enter a matrix first.'); return; }
 
   clearTimeout(_closeTimer);
   _modalOpener = document.activeElement;
@@ -599,7 +710,6 @@ async function openEquivModal() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ matrix: matA }),
     });
-
     const data = await resp.json();
 
     if (data.error) {
@@ -609,7 +719,6 @@ async function openEquivModal() {
     }
 
     els.equivCategory.textContent = data.category || '';
-
     const p = data.properties || {};
     const tagDefs = [
       { cls: 'tag-rows',    label: `rows = ${p.rows}` },
@@ -620,10 +729,7 @@ async function openEquivModal() {
     els.equivProps.innerHTML = tagDefs
       .map(t => `<span class="prop-tag ${t.cls}">${escapeHtml(t.label)}</span>`)
       .join('');
-
-    const stmts = data.statements || [];
-    els.equivList.innerHTML = stmts.map(s => `<li>${s}</li>`).join('');
-
+    els.equivList.innerHTML = (data.statements || []).map(s => `<li>${s}</li>`).join('');
     typesetMath(els.equivModal);
   } catch (err) {
     els.equivCategory.textContent = 'Network error';
@@ -636,9 +742,7 @@ function closeEquivModal() {
   els.equivModal.classList.remove('modal-visible');
   _closeTimer = setTimeout(() => {
     els.equivModal.classList.add('hidden');
-    if (_modalOpener && typeof _modalOpener.focus === 'function') {
-      _modalOpener.focus();
-    }
+    if (_modalOpener && typeof _modalOpener.focus === 'function') _modalOpener.focus();
     _modalOpener = null;
   }, 200);
 }
@@ -654,13 +758,6 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Initialisation
-   ───────────────────────────────────────────────────────────────────────── */
-
-// Cached NodeList for active-state management — buttons don't change after init
-let opBtns;
 
 /* ─────────────────────────────────────────────────────────────────────────
    History
@@ -721,58 +818,85 @@ function closeHistoryDrawer() {
 }
 
 function restoreHistory(entry) {
-  if (!state.textModeA) toggleTextModeA();
+  // Restore Matrix A in text mode
+  if (!state.textModeA) {
+    state.textModeA = true;
+    els.gridA.classList.add('hidden');
+    els.textWrapA.classList.remove('hidden');
+  }
   els.textA.value = entry.matrices[0].value;
+
+  // Restore Matrix B if present
+  if (entry.matrices.length > 1 && entry.matrices[1].label !== 'M3') {
+    if (!state.textModeB) {
+      state.textModeB = true;
+      els.gridB.classList.add('hidden');
+      els.textWrapB.classList.remove('hidden');
+    }
+    els.textB.value = entry.matrices[1].value;
+  }
 
   els.resultDisplay.innerHTML = entry.result || '';
   typesetMath(els.resultDisplay);
   hideShimmer();
 
-  if (entry.steps && entry.steps.trim()) {
-    renderSteps(entry.steps);
-  } else {
-    clearSteps();
-  }
+  if (entry.steps && entry.steps.trim()) renderSteps(entry.steps);
+  else clearSteps();
 
   state.lastRaw = entry.raw || null;
-  if (state.lastRaw) {
-    els.answerToolbar.classList.remove('hidden');
-  } else {
-    els.answerToolbar.classList.add('hidden');
-  }
+  els.answerToolbar.classList.toggle('hidden', !state.lastRaw);
 
   opBtns.forEach(b => b.classList.remove('active'));
   state.activeOp = entry.op;
+  state.activeNeeds = null;
   els.opLabel.textContent = entry.label;
+  els.computeBtn.disabled = false;
   setStatus('done');
   closeHistoryDrawer();
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Blur autosave
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** On textarea blur: silently parse and pre-populate the grid. */
+function wireAutosave(textEl, gridId, rowKey, colKey, rowInput, colInput) {
+  textEl.addEventListener('blur', async () => {
+    const text = textEl.value.trim();
+    if (!text) return;
+    const data = await fetchParse(text);
+    if (data) {
+      populateGrid(gridId, data, rowKey, colKey, rowInput, colInput);
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Initialisation
+   ───────────────────────────────────────────────────────────────────────── */
+
+let opBtns;
+
 function init() {
-  // 1. Apply op-group colors and wire accordion toggle with localStorage
+  // 1. Op-group accordion + localStorage
   document.querySelectorAll('.op-group').forEach(g => {
     g.style.setProperty('--group-color', g.dataset.color);
-
     const header = g.querySelector('.group-header');
     const body   = g.querySelector('.group-body');
     if (!header || !body) return;
-
     const labelText  = g.querySelector('.group-label')?.textContent.trim() || '';
     const storageKey = labelText ? `la-studio-op-group-${labelText}` : null;
-
     if (storageKey && localStorage.getItem(storageKey) === 'collapsed') {
       g.classList.add('collapsed');
       header.setAttribute('aria-expanded', 'false');
     } else {
       header.setAttribute('aria-expanded', 'true');
     }
-
     header.addEventListener('click', () => {
       const nowCollapsed = g.classList.toggle('collapsed');
       header.setAttribute('aria-expanded', nowCollapsed ? 'false' : 'true');
       if (storageKey) localStorage.setItem(storageKey, nowCollapsed ? 'collapsed' : 'open');
     });
-
     header.addEventListener('keydown', e => {
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); header.click(); }
     });
@@ -787,15 +911,22 @@ function init() {
   els.colsA.addEventListener('keydown', e => e.key === 'Enter' && applyDimA());
   els.clearA.addEventListener('click', () => clearGrid('gridA'));
 
-  // 4. Text mode toggle for Matrix A
+  // 4. Text mode toggles
   els.toggleModeA.addEventListener('click', toggleTextModeA);
+  els.toggleModeB.addEventListener('click', toggleTextModeB);
+  els.toggleModeC.addEventListener('click', toggleTextModeC);
 
-  // 5. Matrix B dim controls
+  // 5. Autosave on textarea blur
+  wireAutosave(els.textA, 'gridA', 'rowsA', 'colsA', els.rowsA, els.colsA);
+  wireAutosave(els.textB, 'gridB', 'rowsB', 'colsB', els.rowsB, els.colsB);
+  wireAutosave(els.textC, 'gridC', 'rowsC', 'colsC', els.rowsC, els.colsC);
+
+  // 6. Matrix B dim controls
   els.updateB.addEventListener('click', applyDimB);
   els.rowsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
   els.colsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
 
-  // 5b. Chain multiply: segment control wiring
+  // 7. Chain multiply segment controls
   [els.modSegA, els.modSegB, els.modSegC].forEach(seg => {
     if (!seg) return;
     seg.querySelectorAll('.mod-seg-btn').forEach(btn => {
@@ -806,7 +937,7 @@ function init() {
     });
   });
 
-  // Chain multiply: M3 toggle
+  // 8. Chain multiply: M3 toggle
   els.addM3Btn.addEventListener('click', () => {
     state.chain.showM3 = !state.chain.showM3;
     if (state.chain.showM3) {
@@ -818,7 +949,6 @@ function init() {
       els.cardC.classList.add('hidden');
       els.addM3Btn.classList.remove('m3-active');
       els.addM3Btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Add third matrix';
-      // Reset M3 segment
       if (els.modSegC) {
         els.modSegC.querySelectorAll('.mod-seg-btn').forEach(b => b.classList.remove('active'));
         const noneBtn = els.modSegC.querySelector('[data-mod="none"]');
@@ -827,7 +957,7 @@ function init() {
     }
   });
 
-  // Chain multiply: Matrix C dim controls
+  // 9. Matrix C dim controls
   els.updateC.addEventListener('click', () => {
     const r = parseInt(els.rowsC.value, 10);
     const c = parseInt(els.colsC.value, 10);
@@ -839,35 +969,44 @@ function init() {
   els.rowsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
   els.colsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
 
-  // 6. Operation buttons
+  // 10. Operation buttons — select only, Compute button runs
   opBtns = document.querySelectorAll('.op-btn');
   opBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const op = btn.dataset.op;
       if (!op) return;
-      runOperation(op, btn.dataset.needs);
+      selectOp(op, btn.dataset.needs);
     });
   });
 
-  // 7. Steps collapse toggle
+  // 11. Compute button
+  els.computeBtn.addEventListener('click', runOperation);
+
+  // 12. Keyboard shortcut: Cmd/Ctrl+Enter to compute
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (state.activeOp && !els.computeBtn.disabled) runOperation();
+    }
+  });
+
+  // 13. Steps collapse toggle
   els.toggleSteps.addEventListener('click', () => {
     state.stepsCollapsed = !state.stepsCollapsed;
     applyStepsVisibility();
   });
 
-  // 8. Equivalent statements
+  // 14. Equivalent statements
   els.equivBtn.addEventListener('click', openEquivModal);
   els.closeModal.addEventListener('click', closeEquivModal);
+  els.equivModal.addEventListener('click', e => { if (e.target === els.equivModal) closeEquivModal(); });
 
-  // 9. Cancel button
+  // 15. Cancel button
   els.cancelBtn.addEventListener('click', () => {
-    if (state.currentAbort) {
-      state.currentAbort.abort();
-      state.currentAbort = null;
-    }
+    if (state.currentAbort) { state.currentAbort.abort(); state.currentAbort = null; }
   });
 
-  // 10. Copy button
+  // 16. Copy button
   els.copyBtn.addEventListener('click', () => {
     if (!state.lastRaw) return;
     navigator.clipboard.writeText(state.lastRaw).then(() => {
@@ -879,12 +1018,7 @@ function init() {
     });
   });
 
-  // Close modal on backdrop click
-  els.equivModal.addEventListener('click', e => {
-    if (e.target === els.equivModal) closeEquivModal();
-  });
-
-  // History drawer
+  // 17. History drawer
   els.historyBtn.addEventListener('click', openHistoryDrawer);
   els.closeHistoryBtn.addEventListener('click', closeHistoryDrawer);
   els.historyBackdrop.addEventListener('click', closeHistoryDrawer);
@@ -894,7 +1028,7 @@ function init() {
     renderHistoryList();
   });
 
-  // Modal keyboard: Escape closes, Tab is trapped inside
+  // 18. Keyboard: Escape + Tab trap
   document.addEventListener('keydown', e => {
     if (!els.historyBackdrop.classList.contains('hidden')) {
       if (e.key === 'Escape') { closeHistoryDrawer(); return; }

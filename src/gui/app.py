@@ -20,11 +20,47 @@ app.mount("/static", StaticFiles(directory="src/gui/static"), name="static")
 # Helpers
 # ---------------------------------------------------------------------------
 
-def parse_matrix(s: str) -> Matrix:
-    """Try LaTeX → nested-list literal → from_str ([v v; v v] format).
+def _parse_bracket_format(s: str) -> Matrix:
+    """Parse [v11 v12; v21 v22] or [v11, v12; v21, v22] format.
 
-    All float entries are converted to exact rationals so that symbolic
-    operations (eigenvals, diagonalize, nullspace, etc.) work correctly.
+    Cells may be any sympy expression.  When rows contain commas they are used
+    as the cell delimiter (allowing spaces inside expressions); otherwise cells
+    are split on whitespace.
+    """
+    inner = s.strip()[1:-1]   # strip outer [ ]
+    rows = []
+    for row_str in inner.split(';'):
+        row_str = row_str.strip()
+        if not row_str:
+            continue
+        if ',' in row_str:
+            cells = [sym.sympify(c.strip()) for c in row_str.split(',')]
+        else:
+            cells = [sym.sympify(c) for c in row_str.split()]
+        rows.append(cells)
+    if not rows:
+        raise ValueError("Empty matrix")
+    ncols = len(rows[0])
+    for r in rows:
+        if len(r) != ncols:
+            raise ValueError(
+                f"Row length mismatch: expected {ncols} cells, got {len(r)}. "
+                "Use commas to separate cells when expressions contain spaces, "
+                "e.g. [30, -1 + sqrt(5); 1, 2]"
+            )
+    return Matrix(rows)
+
+
+def parse_matrix(s: str) -> Matrix:
+    """Parse matrix from LaTeX, Python list, or bracket notation.
+
+    Supported formats:
+    - LaTeX:       \\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}
+    - Python list: [[1, 2], [3, 4]]  or  [[1, sqrt(5)], [3, 4]]
+    - Bracket:     [1 2; 3 4]  (space-separated, no spaces within cells)
+    - Bracket+CSV: [1, -1+sqrt(5); 3, 4]  (comma-separated, spaces OK in cells)
+
+    All float entries are converted to exact rationals.
     """
     s = s.strip()
 
@@ -32,6 +68,7 @@ def parse_matrix(s: str) -> Matrix:
         M = Matrix.from_latex(s, verbosity=0)
     else:
         M = None
+        # Try Python list literal first: [[1, sqrt(5)], [3, 4]]
         try:
             list_data = ast.literal_eval(s)
             if isinstance(list_data, list):
@@ -44,7 +81,26 @@ def parse_matrix(s: str) -> Matrix:
                 M = Matrix(rows)
         except Exception:
             pass
-        if M is None:
+        # Try bracket format: [v1, v2; v3, v4] or [v1 v2; v3 v4]
+        if M is None and s.startswith('[') and s.endswith(']'):
+            bracket_err = None
+            try:
+                M = _parse_bracket_format(s)
+            except Exception as e:
+                bracket_err = e
+            # Fallback to from_str (handles augmented matrices etc.)
+            if M is None:
+                try:
+                    M = Matrix.from_str(s)
+                except Exception:
+                    # Both failed — give a useful message
+                    hint = (
+                        "When cell expressions contain spaces (e.g. '-1 + sqrt(5)'), "
+                        "use commas to separate cells: [30, -1 + sqrt(5); 22, 1]"
+                    )
+                    raise ValueError(f"{bracket_err}. {hint}") from None
+        # Final fallback for non-bracket formats
+        elif M is None:
             M = Matrix.from_str(s)
 
     return M.applyfunc(lambda x: sym.nsimplify(x, rational=True))
@@ -598,6 +654,24 @@ async def equivalent_statements(request: Request):
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+# ---------------------------------------------------------------------------
+# Parse endpoint (used by frontend blur-autosave and text→grid toggle)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/parse")
+async def parse_matrix_endpoint(request: Request):
+    try:
+        data = await request.json()
+        s = data.get("matrix", "").strip()
+        if not s:
+            return JSONResponse(content={"error": "Empty input"}, status_code=400)
+        M = parse_matrix(s)
+        cells = [[str(M[r, c]) for c in range(M.cols)] for r in range(M.rows)]
+        return JSONResponse(content={"rows": M.rows, "cols": M.cols, "cells": cells})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=400)
 
 
 # ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=5">
+  <link rel="stylesheet" href="/static/style.css?v=6">
   <script>
     window.MathJax = {
       tex: {
@@ -64,7 +64,7 @@
         </div>
         <div id="gridA" class="matrix-grid"></div>
         <div id="textWrapA" class="hidden">
-          <textarea id="textA" placeholder="[1 2; 3 4]  or  [[1,2],[3,4]]  or  LaTeX" spellcheck="false"></textarea>
+          <textarea id="textA" placeholder="[1 2; 3 4]  or  [1, sqrt(5); 3, 4]  or  [[1,2],[3,4]]  or  LaTeX" spellcheck="false"></textarea>
         </div>
         <button class="mode-toggle" id="toggleModeA">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 4h10M2 7h7M2 10h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -98,6 +98,13 @@
           </div>
         </div>
         <div id="gridB" class="matrix-grid"></div>
+        <div id="textWrapB" class="hidden">
+          <textarea id="textB" placeholder="[1 2; 3 4]  or  [1, sqrt(5); 3, 4]  or  LaTeX" spellcheck="false"></textarea>
+        </div>
+        <button class="mode-toggle" id="toggleModeB">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 4h10M2 7h7M2 10h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Text / LaTeX mode
+        </button>
         <p class="hint" id="hintB"></p>
       </div>
 
@@ -127,6 +134,13 @@
           </div>
         </div>
         <div id="gridC" class="matrix-grid"></div>
+        <div id="textWrapC" class="hidden">
+          <textarea id="textC" placeholder="[1 2; 3 4]  or  [1, sqrt(5); 3, 4]  or  LaTeX" spellcheck="false"></textarea>
+        </div>
+        <button class="mode-toggle" id="toggleModeC">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 4h10M2 7h7M2 10h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Text / LaTeX mode
+        </button>
       </div>
 
       <!-- Operations Accordion -->
@@ -275,7 +289,10 @@
 
       <!-- Sticky operation bar -->
       <div class="op-bar">
-        <span id="opLabel" class="op-label">—</span>
+        <div class="op-bar-left">
+          <span id="opLabel" class="op-label">—</span>
+          <button id="computeBtn" class="btn-compute" disabled title="Select an operation first">&#9654; Compute</button>
+        </div>
         <div class="op-bar-right">
           <button id="historyBtn" class="btn-history" aria-label="Show calculation history">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 3.5V6.5L8.5 8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -353,6 +370,6 @@
     <div class="history-drawer-body" id="historyList"></div>
   </aside>
 
-  <script src="/static/script.js?v=4"></script>
+  <script src="/static/script.js?v=6"></script>
 </body>
 </html>
