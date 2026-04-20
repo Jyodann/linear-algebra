@@ -227,6 +227,19 @@ async def process_matrix(request: Request):
             except Exception as e:
                 return JSONResponse(content={"error": f"Failed to parse matrix3: {e}"}, status_code=400)
 
+        # Build input LaTeX summary
+        is_chain = operation == "chain_multiply"
+        a_label = "M_1" if is_chain else "A"
+        input_parts = [f"{a_label} = {sym.latex(A)}"]
+        if b is not None:
+            input_parts.append(f"b = {sym.latex(b)}")
+        if B is not None:
+            b_label = "M_2" if is_chain else "B"
+            input_parts.append(f"{b_label} = {sym.latex(B)}")
+        if C is not None:
+            input_parts.append(f"M_3 = {sym.latex(C)}")
+        input_latex = "\\[" + " \\quad ".join(input_parts) + "\\]"
+
         loop = asyncio.get_event_loop()
 
         def compute():
@@ -525,7 +538,7 @@ async def process_matrix(request: Request):
             return JSONResponse(content={"error": err}, status_code=400)
 
         steps = steps_html(steps_raw) if steps_raw and steps_raw.strip() else ""
-        return JSONResponse(content={"result": result, "steps": steps, "raw": raw or ""})
+        return JSONResponse(content={"result": result, "steps": steps, "raw": raw or "", "input_latex": input_latex})
 
     except Exception as e:
         traceback.print_exc()

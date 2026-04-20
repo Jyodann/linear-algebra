@@ -120,6 +120,8 @@ const els = {
   addM3Btn:        $('addM3Btn'),
   answerToolbar:   $('answerToolbar'),
   copyBtn:         $('copyBtn'),
+  inputSummary:    $('inputSummary'),
+  inputDisplay:    $('inputDisplay'),
   helpBtn:         $('helpBtn'),
   helpModal:       $('helpModal'),
   closeHelpModal:  $('closeHelpModal'),
@@ -466,6 +468,8 @@ function showShimmer() {
   els.resultDisplay.classList.add('hidden');
   els.resultDisplay.innerHTML = '';
   els.answerToolbar.classList.add('hidden');
+  els.inputSummary.classList.add('hidden');
+  els.inputDisplay.innerHTML = '';
   els.copyBtn.textContent = 'Copy';
   state.lastRaw = null;
 }
@@ -640,6 +644,12 @@ async function runOperation() {
     await renderResult(data.result || '<span class="placeholder">No result returned.</span>');
     state.lastRaw = data.raw || null;
     els.answerToolbar.classList.toggle('hidden', !state.lastRaw);
+
+    if (data.input_latex) {
+      els.inputDisplay.innerHTML = data.input_latex;
+      els.inputSummary.classList.remove('hidden');
+      await typesetMath(els.inputDisplay);
+    }
 
     // Record history
     const histMatrices = [{ label: 'A', value: getMatrixA() }];
@@ -853,6 +863,8 @@ function restoreHistory(entry) {
 
   els.resultDisplay.innerHTML = entry.result || '';
   typesetMath(els.resultDisplay);
+  els.inputSummary.classList.add('hidden');
+  els.inputDisplay.innerHTML = '';
   hideShimmer();
 
   if (entry.steps && entry.steps.trim()) renderSteps(entry.steps);

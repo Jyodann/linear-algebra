@@ -289,8 +289,8 @@ body {
 .grid-cell::placeholder { color: var(--text-muted); }
 
 /* ── Text mode ──────────────────────────────────────────────────────────── */
-#textWrapA { padding: 0.75rem; background: var(--surface-2); }
-#textA {
+#textWrapA, #textWrapB, #textWrapC { padding: 0.75rem; background: var(--surface-2); box-sizing: border-box; width: 100%; }
+#textA, #textB, #textC {
   width: 100%;
   min-height: 78px;
   background: var(--surface);
@@ -303,9 +303,10 @@ body {
   resize: vertical;
   transition: border-color 0.15s, box-shadow 0.15s;
   line-height: 1.65;
+  box-sizing: border-box;
 }
-#textA:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-#textA::placeholder { color: var(--text-muted); }
+#textA:focus, #textB:focus, #textC:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+#textA::placeholder, #textB::placeholder, #textC::placeholder { color: var(--text-muted); }
 
 /* ── Mode toggle ────────────────────────────────────────────────────────── */
 .mode-toggle {
@@ -617,6 +618,31 @@ body {
   max-width: 100%;
   word-break: break-word;
   line-height: 1.55;
+}
+
+/* ── Input summary ──────────────────────────────────────────────────────── */
+.input-summary {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.input-summary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0.5rem 1.25rem;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.input-summary-body {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.88rem;
+  overflow-x: auto;
+  text-align: center;
 }
 
 /* ── Steps section ──────────────────────────────────────────────────────── */

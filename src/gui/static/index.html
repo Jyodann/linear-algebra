@@ -16,7 +16,7 @@
         processEscapes: true
       },
       options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea']
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'code']
       }
     };
   </script>
@@ -319,6 +319,12 @@
           <div id="resultDisplay" class="result-body">
             <p class="placeholder">Select an operation from the left panel</p>
           </div>
+        </div>
+
+        <!-- Input summary (shown after computation) -->
+        <div class="input-summary hidden" id="inputSummary">
+          <div class="input-summary-label">Input</div>
+          <div id="inputDisplay" class="input-summary-body"></div>
         </div>
 
         <!-- Working steps (inline section, expands freely) -->
