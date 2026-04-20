@@ -126,8 +126,8 @@ body {
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.15s, box-shadow 0.15s;
-  overflow: hidden;
 }
+.card-header { border-radius: var(--radius) var(--radius) 0 0; }
 .input-card:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-sm);
@@ -266,6 +266,7 @@ body {
   padding: 0.75rem;
   background: var(--surface-2);
   justify-content: start;
+  overflow-x: auto;
 }
 
 .grid-cell {
@@ -545,7 +546,6 @@ body {
   border-radius: 12px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
 }
 .answer-card {
   box-shadow: var(--shadow-md);
@@ -559,6 +559,7 @@ body {
   padding: 0.6rem 1.25rem;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
+  border-radius: 12px 12px 0 0;
 }
 .result-card-title-group {
   display: flex;
@@ -631,6 +632,7 @@ body {
   padding: 2rem 2.5rem;
   text-align: center;
   font-size: 1.1rem;
+  overflow-x: auto;
 }
 .placeholder { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
 .error-message {
@@ -690,6 +692,7 @@ body {
   padding: 0.875rem 1.5rem;
   margin: 0.3rem 0;
   text-align: center;
+  overflow-x: auto;
   line-height: 1.9;
 }
 
