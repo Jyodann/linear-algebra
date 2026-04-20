@@ -120,6 +120,9 @@ const els = {
   addM3Btn:        $('addM3Btn'),
   answerToolbar:   $('answerToolbar'),
   copyBtn:         $('copyBtn'),
+  helpBtn:         $('helpBtn'),
+  helpModal:       $('helpModal'),
+  closeHelpModal:  $('closeHelpModal'),
   historyBtn:      $('historyBtn'),
   historyCount:    $('historyCount'),
   historyDrawer:   $('historyDrawer'),
@@ -737,6 +740,18 @@ async function openEquivModal() {
   }
 }
 
+function openHelpModal() {
+  els.helpModal.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    els.helpModal.classList.add('modal-visible');
+  }));
+}
+
+function closeHelpModal() {
+  els.helpModal.classList.remove('modal-visible');
+  setTimeout(() => els.helpModal.classList.add('hidden'), 200);
+}
+
 function closeEquivModal() {
   clearTimeout(_closeTimer);
   els.equivModal.classList.remove('modal-visible');
@@ -996,7 +1011,12 @@ function init() {
     applyStepsVisibility();
   });
 
-  // 14. Equivalent statements
+  // 14. Help modal
+  els.helpBtn.addEventListener('click', openHelpModal);
+  els.closeHelpModal.addEventListener('click', closeHelpModal);
+  els.helpModal.addEventListener('click', e => { if (e.target === els.helpModal) closeHelpModal(); });
+
+  // 14b. Equivalent statements
   els.equivBtn.addEventListener('click', openEquivModal);
   els.closeModal.addEventListener('click', closeEquivModal);
   els.equivModal.addEventListener('click', e => { if (e.target === els.equivModal) closeEquivModal(); });
@@ -1032,6 +1052,9 @@ function init() {
   document.addEventListener('keydown', e => {
     if (!els.historyBackdrop.classList.contains('hidden')) {
       if (e.key === 'Escape') { closeHistoryDrawer(); return; }
+    }
+    if (!els.helpModal.classList.contains('hidden')) {
+      if (e.key === 'Escape') { closeHelpModal(); return; }
     }
     if (els.equivModal.classList.contains('hidden')) return;
     if (e.key === 'Escape') {

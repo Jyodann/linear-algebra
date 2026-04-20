@@ -803,6 +803,82 @@ body {
 }
 
 /* ── History button ─────────────────────────────────────────────────────── */
+/* ── Help button ────────────────────────────────────────────────────────── */
+.btn-help {
+  width: 28px;
+  height: 28px;
+  border-radius: 100px;
+  border: 1px solid var(--border-bright);
+  background: var(--surface);
+  color: var(--text-sub);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.btn-help:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* ── Help modal ─────────────────────────────────────────────────────────── */
+.help-modal-box { max-width: 560px; max-height: 84vh; overflow-y: auto; }
+.help-section { margin-bottom: 1.4rem; }
+.help-section:last-child { margin-bottom: 0; }
+.help-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.help-note { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 0.5rem; line-height: 1.4; }
+.help-note-inline { font-size: 0.72rem; color: var(--text-muted); }
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.help-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.help-table td {
+  padding: 0.32rem 0.5rem;
+  border-bottom: 1px solid var(--surface-2);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+.help-table tr:last-child td { border-bottom: none; }
+.help-table code {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+  white-space: nowrap;
+}
+kbd {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  padding: 0.1rem 0.38rem;
+  box-shadow: 0 1px 0 var(--border-bright);
+  white-space: nowrap;
+}
+
 .btn-history {
   height: 30px;
   padding: 0 0.75rem;
