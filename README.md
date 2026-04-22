@@ -44,10 +44,15 @@ uv sync
 ```
 
 This installs:
-- `ma1522` — the local symbolic linear algebra package (editable install)
 - `numpy`, `sympy`, `sympy-latex-parser` — computation
 - `fastapi`, `uvicorn`, `python-multipart` — web server
 - `pytest`, `pytest-cov`, `httpx`, `ruff` — development tools
+
+In addition, run this to also install the ma1522 package: 
+- `ma1522` — the local symbolic linear algebra package (editable install)
+```bash
+uv pip install .
+```
 
 ### 3. Verify the install
 
