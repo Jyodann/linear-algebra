@@ -31,7 +31,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 1. Clone the repository
 
 ```bash
-git clone git@github.com:Tuxedolphin/linear-algebra.git
+git clone https://github.com/Tuxedolphin/linear-algebra.git
 cd linear-algebra
 ```
 
