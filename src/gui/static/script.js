@@ -383,6 +383,7 @@ async function applyDimA() {
   restoreGrid('gridA', saved);
 
   applyAutoLink('A');
+  saveSession();
 }
 
 function getMatrixA() {
@@ -568,6 +569,7 @@ async function applyDimB() {
   restoreGrid('gridB', saved);
 
   applyAutoLink('B');
+  saveSession();
 }
 
 /**
@@ -762,6 +764,7 @@ function selectOp(op, needs) {
   showSecondary(needs || null);
   els.computeBtn.disabled = false;
   els.computeBtn.title = `Run ${OP_LABELS[op] || op}`;
+  saveSession();
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1077,6 +1080,81 @@ function closeSettings() {
   els.settingsBtn.classList.remove('active');
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Session persistence
+   ───────────────────────────────────────────────────────────────────────── */
+
+const SESSION_KEY = 'la-studio-session';
+
+function saveSession() {
+  try {
+    const data = {
+      matA: readGrid('gridA', state.rowsA, state.colsA),
+      rowsA: state.rowsA, colsA: state.colsA,
+      matB: readGrid('gridB', state.rowsB, state.colsB),
+      rowsB: state.rowsB, colsB: state.colsB,
+      matC: readGrid('gridC', state.rowsC, state.colsC),
+      rowsC: state.rowsC, colsC: state.colsC,
+      activeOp: state.activeOp,
+      activeNeeds: state.activeNeeds,
+      secondaryMode: state.secondaryMode,
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch { /* quota exceeded — silently ignore */ }
+}
+
+async function restoreSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+
+    // Restore Matrix A
+    if (data.rowsA && data.colsA) {
+      state.rowsA = data.rowsA; state.colsA = data.colsA;
+      els.rowsA.value = data.rowsA; els.colsA.value = data.colsA;
+      if (data.matA) {
+        const parsed = await fetchParse(data.matA);
+        if (parsed) populateGrid('gridA', parsed, 'rowsA', 'colsA', els.rowsA, els.colsA);
+        else createGrid('gridA', data.rowsA, data.colsA);
+      } else {
+        createGrid('gridA', data.rowsA, data.colsA);
+      }
+    }
+
+    // Restore operation + secondary panel
+    if (data.activeOp) {
+      selectOp(data.activeOp, data.activeNeeds || null);
+    }
+
+    // Restore Matrix B
+    if (data.secondaryMode && data.rowsB && data.colsB) {
+      state.rowsB = data.rowsB; state.colsB = data.colsB;
+      if (els.rowsB) els.rowsB.value = data.rowsB;
+      if (els.colsB) els.colsB.value = data.colsB;
+      if (data.matB) {
+        const parsed = await fetchParse(data.matB);
+        if (parsed) populateGrid('gridB', parsed, 'rowsB', 'colsB', els.rowsB, els.colsB);
+        else createGrid('gridB', data.rowsB, data.colsB);
+      } else {
+        createGrid('gridB', data.rowsB, data.colsB);
+      }
+    }
+
+    // Restore Matrix C (chain multiply M3)
+    if (state.chain.showM3 && data.rowsC && data.colsC) {
+      state.rowsC = data.rowsC; state.colsC = data.colsC;
+      if (els.rowsC) els.rowsC.value = data.rowsC;
+      if (els.colsC) els.colsC.value = data.colsC;
+      if (data.matC) {
+        const parsed = await fetchParse(data.matC);
+        if (parsed) populateGrid('gridC', parsed, 'rowsC', 'colsC', els.rowsC, els.colsC);
+        else createGrid('gridC', data.rowsC, data.colsC);
+      }
+    }
+  } catch { /* corrupt session — silently skip */ }
+}
+
 function applyDarkMode(dark) {
   document.body.dataset.theme = dark ? 'dark' : '';
   els.darkToggle.setAttribute('aria-checked', dark ? 'true' : 'false');
@@ -1255,6 +1333,7 @@ function init() {
     state.colsC = c;
     createGrid('gridC', r, c);
     restoreGrid('gridC', saved);
+    saveSession();
   });
   els.rowsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
   els.colsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
@@ -1394,6 +1473,9 @@ function init() {
     filterOps('');
     els.opSearch.focus();
   });
+
+  // 23. Restore previous session
+  restoreSession();
 }
 
 document.addEventListener('DOMContentLoaded', init);
