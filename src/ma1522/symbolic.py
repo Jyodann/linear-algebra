@@ -1803,6 +1803,48 @@ class Matrix(sym.MutableDenseMatrix):
             display(RREF(U, tuple(pivots)))  # type: ignore
             print("\n")
 
+    def _rref_numeric_pivots_only(self) -> tuple["Matrix", tuple[int, ...]]:
+        """RREF that only pivots on numeric (symbol-free) entries.
+
+        SymPy's default rref treats symbolic expressions as non-zero pivots,
+        eliminating variables from the result. This implementation skips any
+        column where no numeric non-zero entry is available as a pivot,
+        preserving symbolic expressions in free/RHS columns.
+        """
+        import sympy as _sym
+        m, n = self.shape
+        M = _sym.MutableMatrix(self)
+        pivot_row = 0
+        pivot_cols: list[int] = []
+
+        for col in range(n):
+            # Look for a numeric (no free symbols), non-zero entry in this column
+            found = None
+            for row in range(pivot_row, m):
+                e = M[row, col]
+                if not e.free_symbols and e != 0:
+                    found = row
+                    break
+            if found is None:
+                continue  # column has no usable numeric pivot — skip
+
+            if found != pivot_row:
+                M.row_swap(found, pivot_row)
+
+            pv = M[pivot_row, col]
+            M[pivot_row, :] = M[pivot_row, :] / pv
+
+            for r in range(m):
+                if r != pivot_row:
+                    f = M[r, col]
+                    if f != 0:
+                        M[r, :] = M[r, :] - f * M[pivot_row, :]
+
+            pivot_cols.append(col)
+            pivot_row += 1
+
+        return _sym.Matrix(M), tuple(pivot_cols)
+
     # Override
     def rref(self, *args, pivots: bool = True, **kwargs) -> RREF | Matrix:
         """Computes the Reduced Row Echelon Form (RREF) of the matrix.
@@ -1834,14 +1876,17 @@ class Matrix(sym.MutableDenseMatrix):
         """
         if self.free_symbols:
             warn(
-                "Matrix contains free symbols. The RREF result assumes all symbolic "
-                "expressions acting as pivots are non-zero, which may not hold for all "
-                "values of the variables. Use evaluate_cases() for a case-by-case analysis.",
+                "Matrix contains free symbols. Pivoting only on numeric entries; "
+                "symbolic columns are treated as free (not used as pivots). "
+                "Use evaluate_cases() for a full case-by-case analysis.",
                 UserWarning,
                 stacklevel=2,
             )
-
-        if pivots:
+            rref_mat, pivot_pos = self._rref_numeric_pivots_only()
+            if not pivots:
+                aug = self._aug_pos.copy() if hasattr(self, "_aug_pos") else set()
+                return Matrix(rref_mat, aug_pos=aug)
+        elif pivots:
             rref_mat, pivot_pos = super().rref(*args, **kwargs)
         else:
             rref_mat = super().rref(*args, pivots=False, **kwargs)
