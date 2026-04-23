@@ -132,6 +132,11 @@ const els = {
   clearHistoryBtn: $('clearHistoryBtn'),
   closeHistoryBtn: $('closeHistoryBtn'),
   historyList:     $('historyList'),
+  settingsBtn:     $('settingsBtn'),
+  settingsPopover: $('settingsPopover'),
+  settingsClose:   $('settingsClose'),
+  darkToggle:      $('darkToggle'),
+  autoLinkToggle:  $('autoLinkToggle'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -954,6 +959,32 @@ function closeHistoryDrawer() {
   setTimeout(() => els.historyBackdrop.classList.add('hidden'), 250);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Settings popover
+   ───────────────────────────────────────────────────────────────────────── */
+
+function openSettings() {
+  els.settingsPopover.classList.remove('hidden');
+  els.settingsBtn.classList.add('active');
+}
+
+function closeSettings() {
+  els.settingsPopover.classList.add('hidden');
+  els.settingsBtn.classList.remove('active');
+}
+
+function applyDarkMode(dark) {
+  document.body.dataset.theme = dark ? 'dark' : '';
+  els.darkToggle.setAttribute('aria-checked', dark ? 'true' : 'false');
+  localStorage.setItem('la-studio-dark', dark ? '1' : '0');
+}
+
+function applyAutoLinkPref(on) {
+  state.autoLinkSize = on;
+  els.autoLinkToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+  localStorage.setItem('la-studio-autolink', on ? '1' : '0');
+}
+
 function restoreHistory(entry) {
   // Restore Matrix A in text mode
   if (!state.textModeA) {
@@ -1188,6 +1219,9 @@ function init() {
 
   // 18. Keyboard: Escape + Tab trap
   document.addEventListener('keydown', e => {
+    if (!els.settingsPopover.classList.contains('hidden')) {
+      if (e.key === 'Escape') { closeSettings(); return; }
+    }
     if (!els.historyBackdrop.classList.contains('hidden')) {
       if (e.key === 'Escape') { closeHistoryDrawer(); return; }
     }
@@ -1208,6 +1242,31 @@ function init() {
       }
     }
   });
+
+  // 19. Settings popover
+  els.settingsBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (els.settingsPopover.classList.contains('hidden')) openSettings();
+    else closeSettings();
+  });
+  els.settingsClose.addEventListener('click', closeSettings);
+  document.addEventListener('click', e => {
+    if (!els.settingsPopover.classList.contains('hidden') &&
+        !els.settingsPopover.contains(e.target) &&
+        e.target !== els.settingsBtn) {
+      closeSettings();
+    }
+  });
+  els.darkToggle.addEventListener('click', () => {
+    applyDarkMode(els.darkToggle.getAttribute('aria-checked') !== 'true');
+  });
+  els.autoLinkToggle.addEventListener('click', () => {
+    applyAutoLinkPref(els.autoLinkToggle.getAttribute('aria-checked') !== 'true');
+  });
+
+  // 20. Load saved settings
+  applyDarkMode(localStorage.getItem('la-studio-dark') === '1');
+  applyAutoLinkPref(localStorage.getItem('la-studio-autolink') !== '0');
 }
 
 document.addEventListener('DOMContentLoaded', init);
