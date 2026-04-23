@@ -194,14 +194,24 @@ function createGrid(containerId, rows, cols) {
 
       input.addEventListener('keydown', e => {
         const dirs = {
-          Enter:       [1,  0],
-          ArrowDown:   [1,  0],
-          ArrowUp:     [-1, 0],
-          ArrowRight:  [0,  1],
-          ArrowLeft:   [0, -1],
+          Enter:      [1,  0],
+          ArrowDown:  [1,  0],
+          ArrowUp:    [-1, 0],
+          ArrowRight: [0,  1],
+          ArrowLeft:  [0, -1],
         };
         const delta = dirs[e.key];
         if (!delta) return;
+
+        // Horizontal arrows only navigate when cursor is at the boundary
+        if (e.key === 'ArrowLeft') {
+          if (input.selectionStart !== 0 || input.selectionEnd !== 0) return;
+        }
+        if (e.key === 'ArrowRight') {
+          const end = input.value.length;
+          if (input.selectionStart !== end || input.selectionEnd !== end) return;
+        }
+
         const next = container.querySelector(
           `[data-row="${r + delta[0]}"][data-col="${c + delta[1]}"]`
         );
