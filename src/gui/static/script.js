@@ -849,7 +849,7 @@ function escapeHtml(str) {
    ───────────────────────────────────────────────────────────────────────── */
 
 const _history = [];
-const HISTORY_MAX = 10;
+const HISTORY_MAX = 50;
 
 function _timestamp() {
   return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
