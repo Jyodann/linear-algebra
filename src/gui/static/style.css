@@ -1091,6 +1091,34 @@ mjx-container { max-width: 100%; }
   .card-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
 }
 
+/* ── Undo / Redo buttons ────────────────────────────────────────────────── */
+.undo-redo-group {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.btn-undoredo {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--surface);
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.btn-undoredo:hover:not(:disabled) { background: var(--accent-dim); color: var(--accent); }
+.btn-undoredo:disabled { color: var(--text-muted); cursor: default; }
+
 /* ── Settings button ────────────────────────────────────────────────────── */
 .settings-anchor { position: relative; }
 

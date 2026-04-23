@@ -65,6 +65,67 @@ const state = {
   },
 };
 
+/* ── Undo / Redo ────────────────────────────────────────────────────────── */
+const _undoStack = [];
+const _redoStack = [];
+const UNDO_MAX = 50;
+
+/** Capture full snapshot of all three grids + dims. */
+function captureSnapshot() {
+  return {
+    rowsA: state.rowsA, colsA: state.colsA, cellsA: saveGrid('gridA'),
+    rowsB: state.rowsB, colsB: state.colsB, cellsB: saveGrid('gridB'),
+    rowsC: state.rowsC, colsC: state.colsC, cellsC: saveGrid('gridC'),
+  };
+}
+
+/** Push current state onto undo stack and clear redo. */
+function pushUndo() {
+  _undoStack.push(captureSnapshot());
+  if (_undoStack.length > UNDO_MAX) _undoStack.shift();
+  _redoStack.length = 0;
+  updateUndoButtons();
+}
+
+function applySnapshot(snap) {
+  // Matrix A
+  state.rowsA = snap.rowsA; state.colsA = snap.colsA;
+  els.rowsA.value = snap.rowsA; els.colsA.value = snap.colsA;
+  createGrid('gridA', snap.rowsA, snap.colsA);
+  restoreGrid('gridA', snap.cellsA);
+  // Matrix B (only if card visible)
+  state.rowsB = snap.rowsB; state.colsB = snap.colsB;
+  if (els.rowsB) els.rowsB.value = snap.rowsB;
+  if (els.colsB) els.colsB.value = snap.colsB;
+  createGrid('gridB', snap.rowsB, snap.colsB);
+  restoreGrid('gridB', snap.cellsB);
+  // Matrix C (only if card visible)
+  state.rowsC = snap.rowsC; state.colsC = snap.colsC;
+  if (els.rowsC) els.rowsC.value = snap.rowsC;
+  if (els.colsC) els.colsC.value = snap.colsC;
+  createGrid('gridC', snap.rowsC, snap.colsC);
+  restoreGrid('gridC', snap.cellsC);
+}
+
+function performUndo() {
+  if (!_undoStack.length) return;
+  _redoStack.push(captureSnapshot());
+  applySnapshot(_undoStack.pop());
+  updateUndoButtons();
+}
+
+function performRedo() {
+  if (!_redoStack.length) return;
+  _undoStack.push(captureSnapshot());
+  applySnapshot(_redoStack.pop());
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  if (els.undoBtn) els.undoBtn.disabled = _undoStack.length === 0;
+  if (els.redoBtn) els.redoBtn.disabled = _redoStack.length === 0;
+}
+
 /* ── DOM references ─────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 
@@ -137,6 +198,8 @@ const els = {
   settingsClose:   $('settingsClose'),
   darkToggle:      $('darkToggle'),
   autoLinkToggle:  $('autoLinkToggle'),
+  undoBtn:         $('undoBtn'),
+  redoBtn:         $('redoBtn'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -224,6 +287,15 @@ function createGrid(containerId, rows, cols) {
         if (next) { e.preventDefault(); next.focus(); }
       });
 
+      // Snapshot before edit so Cmd+Z can revert the value
+      input.addEventListener('focus', () => { input._preVal = input.value; });
+      input.addEventListener('blur', () => {
+        if (input.value !== input._preVal) {
+          pushUndo();
+          saveSession();
+        }
+      });
+
       container.appendChild(input);
     }
   }
@@ -286,6 +358,8 @@ async function applyDimA() {
   const r = parseInt(els.rowsA.value, 10);
   const c = parseInt(els.colsA.value, 10);
   if (!r || !c || r < 1 || c < 1) return;
+
+  pushUndo();
 
   // Exit text mode: parse textarea, switch to grid
   if (state.textModeA) {
@@ -469,6 +543,8 @@ async function applyDimB() {
   const r = parseInt(els.rowsB.value, 10);
   const c = parseInt(els.colsB.value, 10);
   if (!r || !c || r < 1 || c < 1) return;
+
+  pushUndo();
 
   // Exit text mode: parse textarea, switch to grid
   if (state.textModeB) {
@@ -1133,6 +1209,8 @@ function init() {
     const c = parseInt(els.colsC.value, 10);
     if (!r || !c || r < 1 || c < 1) return;
 
+    pushUndo();
+
     if (state.textModeC) {
       const text = els.textC.value.trim();
       if (text) {
@@ -1166,11 +1244,19 @@ function init() {
   // 11. Compute button
   els.computeBtn.addEventListener('click', runOperation);
 
-  // 12. Keyboard shortcut: Cmd/Ctrl+Enter to compute
+  // 12. Keyboard shortcut: Cmd/Ctrl+Enter to compute; Cmd/Ctrl+Z/Y for undo/redo
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
       if (state.activeOp && !els.computeBtn.disabled) runOperation();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      performUndo();
+    }
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      performRedo();
     }
   });
 
@@ -1267,6 +1353,11 @@ function init() {
   // 20. Load saved settings
   applyDarkMode(localStorage.getItem('la-studio-dark') === '1');
   applyAutoLinkPref(localStorage.getItem('la-studio-autolink') !== '0');
+
+  // 21. Undo/redo buttons
+  els.undoBtn.addEventListener('click', performUndo);
+  els.redoBtn.addEventListener('click', performRedo);
+  updateUndoButtons();
 }
 
 document.addEventListener('DOMContentLoaded', init);

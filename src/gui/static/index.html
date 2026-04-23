@@ -294,6 +294,14 @@
           <button id="computeBtn" class="btn-compute" disabled title="Select an operation first">&#9654; Compute</button>
         </div>
         <div class="op-bar-right">
+          <div class="undo-redo-group">
+            <button id="undoBtn" class="btn-undoredo" disabled aria-label="Undo" title="Undo (Cmd+Z)">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M2 5H8.5a3 3 0 010 6H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 5L4.5 2.5M2 5l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button id="redoBtn" class="btn-undoredo" disabled aria-label="Redo" title="Redo (Cmd+Shift+Z)">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M11 5H4.5a3 3 0 000 6H8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 5L8.5 2.5M11 5l-2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
           <button id="helpBtn" class="btn-help" aria-label="Input syntax reference" title="Input syntax reference">?</button>
           <div class="settings-anchor">
             <button id="settingsBtn" class="btn-settings" aria-label="Settings" title="Settings">
