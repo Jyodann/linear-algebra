@@ -50,6 +50,7 @@ const state = {
   textModeA: false,
   textModeB: false,
   textModeC: false,
+  autoLinkSize: true,
   secondaryMode: null,    // null | 'rhs' | 'rhs-optional' | 'matrix2' | 'chain'
   stepsCollapsed: false,
   activeOp: null,
@@ -483,6 +484,57 @@ async function applyDimB() {
   restoreGrid('gridB', saved);
 
   applyAutoLink('B');
+}
+
+/**
+ * Enforce dimensional constraints between A and B after one side changed.
+ * source: 'A' | 'B'
+ * Only fires when state.autoLinkSize is true and the constrained dim differs.
+ */
+function applyAutoLink(source) {
+  if (!state.autoLinkSize) return;
+  const mode = state.secondaryMode;
+  if (!mode) return;
+
+  if (mode === 'rhs' || mode === 'rhs-optional') {
+    // Constraint: rows(A) === rows(b)
+    if (source === 'A') {
+      if (state.rowsB !== state.rowsA) {
+        const savedB = saveGrid('gridB');
+        state.rowsB = state.rowsA;
+        els.rowsB.value = state.rowsA;
+        createGrid('gridB', state.rowsB, state.colsB);
+        restoreGrid('gridB', savedB);
+      }
+    } else if (source === 'B') {
+      if (state.rowsA !== state.rowsB) {
+        const savedA = saveGrid('gridA');
+        state.rowsA = state.rowsB;
+        els.rowsA.value = state.rowsB;
+        createGrid('gridA', state.rowsA, state.colsA);
+        restoreGrid('gridA', savedA);
+      }
+    }
+  } else if (mode === 'matrix2' || mode === 'chain') {
+    // Constraint: cols(A) === rows(B)
+    if (source === 'A') {
+      if (state.rowsB !== state.colsA) {
+        const savedB = saveGrid('gridB');
+        state.rowsB = state.colsA;
+        els.rowsB.value = state.colsA;
+        createGrid('gridB', state.rowsB, state.colsB);
+        restoreGrid('gridB', savedB);
+      }
+    } else if (source === 'B') {
+      if (state.colsA !== state.rowsB) {
+        const savedA = saveGrid('gridA');
+        state.colsA = state.rowsB;
+        els.colsA.value = state.rowsB;
+        createGrid('gridA', state.rowsA, state.colsA);
+        restoreGrid('gridA', savedA);
+      }
+    }
+  }
 }
 
 /** Read secondary input. Returns null if mode is rhs-optional and all cells empty. */
