@@ -510,15 +510,32 @@ async def process_matrix(request: Request):
                 if len(operands) < 2:
                     return None, None, None, "chain_multiply requires at least two matrices."
 
+                _labels = ["M_1", "M_2", "M_3"]
+                _mod_superscripts = {"T": "T", "inv": "{-1}", "inv_T": "{T,-1}"}
+
+                def _compute_chain():
+                    modified = []
+                    for i, (M, mod) in enumerate(operands):
+                        mod_mat = _apply_mod(M, mod)
+                        if mod != "none":
+                            sup = _mod_superscripts[mod]
+                            print(f"\\( {_labels[i]}^{sup} = \\)")
+                            print(f"\\[ {sym.latex(mod_mat)} \\]")
+                        modified.append(mod_mat)
+
+                    acc = modified[0]
+                    for j, M in enumerate(modified[1:], start=1):
+                        acc = acc @ M
+                        partial = acc.doit()
+                        if j < len(modified) - 1:
+                            print(f"\\( {_labels[0]} \\cdots {_labels[j]} = \\)")
+                            print(f"\\[ {sym.latex(partial)} \\]")
+                    return acc.doit()
+
                 try:
-                    modified = [_apply_mod(M, m) for M, m in operands]
+                    result_mat, steps_raw = capture(_compute_chain)
                 except Exception as e:
                     return None, None, None, f"Could not apply matrix modifier: {e}"
-
-                result_mat = modified[0]
-                for M in modified[1:]:
-                    result_mat = result_mat @ M
-                result_mat = result_mat.doit()
 
                 result = f"\\[ {sym.latex(result_mat)} \\]"
                 raw = matrix_to_raw(result_mat)
