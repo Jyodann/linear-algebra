@@ -406,11 +406,16 @@ async def process_matrix(request: Request):
             elif operation == "solve":
                 b_vec = b if b is not None else _zero_col_vector(A.rows)
                 try:
-                    sol = A.solve(b_vec)
-                    result = f"\\[ {sym.latex(sol)} \\]"
-                    raw = matrix_to_raw(sol)
-                except ValueError:
-                    result = "No solution"
+                    sol_list = A.solve(b_vec)
+                    if not sol_list:
+                        result = "\\( \\text{No solution — system is inconsistent.} \\)"
+                        raw = ""
+                    else:
+                        sol = sol_list[0]
+                        result = f"\\[ {sym.latex(sol)} \\]"
+                        raw = matrix_to_raw(sol)
+                except Exception:
+                    result = "\\( \\text{No solution — system is inconsistent.} \\)"
                     raw = ""
 
             elif operation == "least_squares":
