@@ -243,6 +243,28 @@ function clearGrid(containerId) {
   container.querySelectorAll('.grid-cell').forEach(c => { c.value = ''; });
 }
 
+/** Snapshot all non-empty cell values. Returns Map keyed by "row,col". */
+function saveGrid(containerId) {
+  const saved = new Map();
+  const container = $(containerId);
+  container.querySelectorAll('.grid-cell').forEach(cell => {
+    const v = cell.value.trim();
+    if (v) saved.set(`${cell.dataset.row},${cell.dataset.col}`, v);
+  });
+  return saved;
+}
+
+/** Restore cell values from a Map keyed by "row,col". */
+function restoreGrid(containerId, saved) {
+  if (!saved || saved.size === 0) return;
+  const container = $(containerId);
+  saved.forEach((val, key) => {
+    const [row, col] = key.split(',');
+    const cell = container.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+    if (cell) cell.value = val;
+  });
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    Matrix A management
    ───────────────────────────────────────────────────────────────────────── */
@@ -254,18 +276,30 @@ function syncDimInputsA() {
   els.colsA.value = state.colsA;
 }
 
-function applyDimA() {
+async function applyDimA() {
   const r = parseInt(els.rowsA.value, 10);
   const c = parseInt(els.colsA.value, 10);
   if (!r || !c || r < 1 || c < 1) return;
+
+  // Exit text mode: parse textarea, switch to grid
+  if (state.textModeA) {
+    const text = els.textA.value.trim();
+    if (text) {
+      const data = await fetchParse(text);
+      if (data) populateGrid('gridA', data, 'rowsA', 'colsA', els.rowsA, els.colsA);
+    }
+    state.textModeA = false;
+    els.textWrapA.classList.add('hidden');
+    els.gridA.classList.remove('hidden');
+  }
+
+  const saved = saveGrid('gridA');
   state.rowsA = r;
   state.colsA = c;
   createGrid('gridA', r, c);
-  if (state.secondaryMode === 'rhs' || state.secondaryMode === 'rhs-optional') {
-    state.rowsB = r;
-    els.rowsB.value = r;
-    createGrid('gridB', state.rowsB, state.colsB);
-  }
+  restoreGrid('gridA', saved);
+
+  applyAutoLink('A');
 }
 
 function getMatrixA() {
@@ -425,13 +459,30 @@ function showSecondary(mode) {
   }
 }
 
-function applyDimB() {
+async function applyDimB() {
   const r = parseInt(els.rowsB.value, 10);
   const c = parseInt(els.colsB.value, 10);
   if (!r || !c || r < 1 || c < 1) return;
+
+  // Exit text mode: parse textarea, switch to grid
+  if (state.textModeB) {
+    const text = els.textB.value.trim();
+    if (text) {
+      const data = await fetchParse(text);
+      if (data) populateGrid('gridB', data, 'rowsB', 'colsB', els.rowsB, els.colsB);
+    }
+    state.textModeB = false;
+    els.textWrapB.classList.add('hidden');
+    els.gridB.classList.remove('hidden');
+  }
+
+  const saved = saveGrid('gridB');
   state.rowsB = r;
   state.colsB = c;
   createGrid('gridB', r, c);
+  restoreGrid('gridB', saved);
+
+  applyAutoLink('B');
 }
 
 /** Read secondary input. Returns null if mode is rhs-optional and all cells empty. */
@@ -994,13 +1045,27 @@ function init() {
   });
 
   // 9. Matrix C dim controls
-  els.updateC.addEventListener('click', () => {
+  els.updateC.addEventListener('click', async () => {
     const r = parseInt(els.rowsC.value, 10);
     const c = parseInt(els.colsC.value, 10);
     if (!r || !c || r < 1 || c < 1) return;
+
+    if (state.textModeC) {
+      const text = els.textC.value.trim();
+      if (text) {
+        const data = await fetchParse(text);
+        if (data) populateGrid('gridC', data, 'rowsC', 'colsC', els.rowsC, els.colsC);
+      }
+      state.textModeC = false;
+      els.textWrapC.classList.add('hidden');
+      els.gridC.classList.remove('hidden');
+    }
+
+    const saved = saveGrid('gridC');
     state.rowsC = r;
     state.colsC = c;
     createGrid('gridC', r, c);
+    restoreGrid('gridC', saved);
   });
   els.rowsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
   els.colsC.addEventListener('keydown', e => e.key === 'Enter' && els.updateC.click());
