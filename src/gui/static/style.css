@@ -1091,6 +1091,62 @@ mjx-container { max-width: 100%; }
   .card-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
 }
 
+/* ── Op search ──────────────────────────────────────────────────────────── */
+.op-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.op-search-icon {
+  position: absolute;
+  left: 0.55rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+.op-search-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 2rem 0 1.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.op-search-input::placeholder { color: var(--text-muted); }
+.op-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.op-search-clear {
+  position: absolute;
+  right: 0.45rem;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.12s, background 0.12s;
+}
+.op-search-clear:hover { color: var(--text); background: var(--border-bright); }
+.op-search-empty {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.5rem 0 0.25rem;
+}
+
 /* ── Undo / Redo buttons ────────────────────────────────────────────────── */
 .undo-redo-group {
   display: flex;

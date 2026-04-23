@@ -200,6 +200,9 @@ const els = {
   autoLinkToggle:  $('autoLinkToggle'),
   undoBtn:         $('undoBtn'),
   redoBtn:         $('redoBtn'),
+  opSearch:        $('opSearch'),
+  opSearchClear:   $('opSearchClear'),
+  opSearchEmpty:   $('opSearchEmpty'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -978,6 +981,31 @@ function escapeHtml(str) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Op search / filter
+   ───────────────────────────────────────────────────────────────────────── */
+
+function filterOps(query) {
+  const q = query.trim().toLowerCase();
+  els.opSearchClear.classList.toggle('hidden', !q);
+
+  let anyVisible = false;
+  document.querySelectorAll('.op-group').forEach(group => {
+    const btns = group.querySelectorAll('.op-btn');
+    let groupHasMatch = false;
+    btns.forEach(btn => {
+      const label = (btn.textContent || '').toLowerCase();
+      const match = !q || label.includes(q);
+      btn.style.display = match ? '' : 'none';
+      if (match) groupHasMatch = true;
+    });
+    group.style.display = groupHasMatch ? '' : 'none';
+    if (groupHasMatch) anyVisible = true;
+  });
+
+  els.opSearchEmpty.classList.toggle('hidden', anyVisible || !q);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    History
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -1358,6 +1386,14 @@ function init() {
   els.undoBtn.addEventListener('click', performUndo);
   els.redoBtn.addEventListener('click', performRedo);
   updateUndoButtons();
+
+  // 22. Op search
+  els.opSearch.addEventListener('input', () => filterOps(els.opSearch.value));
+  els.opSearchClear.addEventListener('click', () => {
+    els.opSearch.value = '';
+    filterOps('');
+    els.opSearch.focus();
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
