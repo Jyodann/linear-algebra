@@ -13,13 +13,14 @@ def test_projection_correctness():
     # Expected Least Squares Solution x_hat = (5, -3)
     # Expected Projection p = (5, 2, -1)
     
-    matrix_str = "[[1, 0, 6], [1, 1, 0], [1, 2, 0]]" # Augmented [A|b]
-    
-    print(f"Testing Projection with matrix: {matrix_str}")
-    
+    matrix_str = "[[1, 0], [1, 1], [1, 2]]"  # A
+    rhs_str = "[[6], [0], [0]]"              # b
+
+    print(f"Testing Projection with matrix: {matrix_str}, rhs: {rhs_str}")
+
     response = client.post(
         "/api/process",
-        json={"matrix": matrix_str, "operation": "projection"}
+        json={"matrix": matrix_str, "rhs": rhs_str, "operation": "projection"}
     )
     
     assert response.status_code == 200

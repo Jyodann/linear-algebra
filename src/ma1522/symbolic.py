@@ -1875,14 +1875,36 @@ class Matrix(sym.MutableDenseMatrix):
             ]), pivots=(0, 1))
         """
         if self.free_symbols:
-            warn(
-                "Matrix contains free symbols. Pivoting only on numeric entries; "
-                "symbolic columns are treated as free (not used as pivots). "
-                "Use evaluate_cases() for a full case-by-case analysis.",
-                UserWarning,
-                stacklevel=2,
+            # _rref_numeric_pivots_only is only correct when free symbols are
+            # confined to augmented (RHS) columns. If symbols appear in
+            # coefficient columns, fall back to SymPy's rref which treats
+            # symbolic expressions as generically non-zero.
+            aug = self._aug_pos if hasattr(self, "_aug_pos") else set()
+            coeff_cols_end = (min(aug) + 1) if aug else self.cols
+            coeff_has_symbols = any(
+                self[r, c].free_symbols
+                for r in range(self.rows)
+                for c in range(coeff_cols_end)
             )
-            rref_mat, pivot_pos = self._rref_numeric_pivots_only()
+            if coeff_has_symbols:
+                warn(
+                    "Matrix contains free symbols in coefficient columns. "
+                    "Result is valid for generic parameter values; special cases "
+                    "(e.g. where a denominator vanishes) may differ. "
+                    "Use evaluate_cases() for a full case-by-case analysis.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                rref_mat, pivot_pos = super().rref(*args, **kwargs)
+            else:
+                warn(
+                    "Matrix contains free symbols. Pivoting only on numeric entries; "
+                    "symbolic columns are treated as free (not used as pivots). "
+                    "Use evaluate_cases() for a full case-by-case analysis.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                rref_mat, pivot_pos = self._rref_numeric_pivots_only()
             if not pivots:
                 aug = self._aug_pos.copy() if hasattr(self, "_aug_pos") else set()
                 return Matrix(rref_mat, aug_pos=aug)
