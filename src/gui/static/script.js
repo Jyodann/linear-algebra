@@ -51,12 +51,15 @@ const state = {
   textModeB: false,
   textModeC: false,
   autoLinkSize: true,
+  showDecimals: false,
+  decimalPlaces: 4,
   secondaryMode: null,    // null | 'rhs' | 'rhs-optional' | 'matrix2' | 'chain'
   stepsCollapsed: false,
   activeOp: null,
   activeNeeds: null,
   currentAbort: null,
   lastRaw: null,
+  lastResultHtml: null,
   chain: {
     modA: { T: false, inv: false },
     modB: { T: false, inv: false },
@@ -193,11 +196,15 @@ const els = {
   clearHistoryBtn: $('clearHistoryBtn'),
   closeHistoryBtn: $('closeHistoryBtn'),
   historyList:     $('historyList'),
-  settingsBtn:     $('settingsBtn'),
-  settingsPopover: $('settingsPopover'),
-  settingsClose:   $('settingsClose'),
-  darkToggle:      $('darkToggle'),
-  autoLinkToggle:  $('autoLinkToggle'),
+  settingsBtn:      $('settingsBtn'),
+  settingsPopover:  $('settingsPopover'),
+  settingsClose:    $('settingsClose'),
+  darkToggle:       $('darkToggle'),
+  autoLinkToggle:   $('autoLinkToggle'),
+  decimalToggle:    $('decimalToggle'),
+  decimalSlider:    $('decimalSlider'),
+  decimalSliderVal: $('decimalSliderVal'),
+  decimalPlacesRow: $('decimalPlacesRow'),
   undoBtn:         $('undoBtn'),
   redoBtn:         $('redoBtn'),
   opSearch:        $('opSearch'),
@@ -670,6 +677,7 @@ function showShimmer() {
   els.inputDisplay.innerHTML = '';
   els.copyBtn.textContent = 'Copy';
   state.lastRaw = null;
+  state.lastResultHtml = null;
 }
 
 function hideShimmer() {
@@ -684,7 +692,8 @@ async function typesetMath(container) {
 }
 
 async function renderResult(html) {
-  els.resultDisplay.innerHTML = html;
+  state.lastResultHtml = html;
+  els.resultDisplay.innerHTML = processHtmlForDisplay(html);
   await typesetMath(els.resultDisplay);
   hideShimmer();
 }
@@ -1167,6 +1176,43 @@ function applyAutoLinkPref(on) {
   localStorage.setItem('la-studio-autolink', on ? '1' : '0');
 }
 
+/** Replace \frac{int}{int} with decimal to `places` significant digits. */
+function convertFractionsToDecimals(html, places) {
+  return html.replace(/\\frac\{(-?\d+)\}\{(-?\d+)\}/g, (match, num, den) => {
+    const d = parseInt(den, 10);
+    if (d === 0) return match;
+    const value = parseInt(num, 10) / d;
+    return parseFloat(value.toFixed(places)).toString();
+  });
+}
+
+function processHtmlForDisplay(html) {
+  if (state.showDecimals) return convertFractionsToDecimals(html, state.decimalPlaces);
+  return html;
+}
+
+async function reRenderResult() {
+  if (!state.lastResultHtml) return;
+  els.resultDisplay.innerHTML = processHtmlForDisplay(state.lastResultHtml);
+  await typesetMath(els.resultDisplay);
+}
+
+function applyDecimalToggle(on) {
+  state.showDecimals = on;
+  els.decimalToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+  els.decimalPlacesRow.classList.toggle('hidden', !on);
+  localStorage.setItem('la-studio-decimals', on ? '1' : '0');
+  reRenderResult();
+}
+
+function applyDecimalPlaces(places) {
+  state.decimalPlaces = places;
+  els.decimalSlider.value = places;
+  els.decimalSliderVal.textContent = places;
+  localStorage.setItem('la-studio-decimal-places', String(places));
+  if (state.showDecimals) reRenderResult();
+}
+
 function restoreHistory(entry) {
   // Restore Matrix A in text mode
   if (!state.textModeA) {
@@ -1186,7 +1232,8 @@ function restoreHistory(entry) {
     els.textB.value = entry.matrices[1].value;
   }
 
-  els.resultDisplay.innerHTML = entry.result || '';
+  state.lastResultHtml = entry.result || null;
+  els.resultDisplay.innerHTML = processHtmlForDisplay(entry.result || '');
   typesetMath(els.resultDisplay);
   els.inputSummary.classList.add('hidden');
   els.inputDisplay.innerHTML = '';
@@ -1456,10 +1503,21 @@ function init() {
   els.autoLinkToggle.addEventListener('click', () => {
     applyAutoLinkPref(els.autoLinkToggle.getAttribute('aria-checked') !== 'true');
   });
+  els.decimalToggle.addEventListener('click', () => {
+    applyDecimalToggle(els.decimalToggle.getAttribute('aria-checked') !== 'true');
+  });
+  els.decimalSlider.addEventListener('input', () => {
+    applyDecimalPlaces(parseInt(els.decimalSlider.value, 10));
+  });
 
   // 20. Load saved settings
   applyDarkMode(localStorage.getItem('la-studio-dark') === '1');
   applyAutoLinkPref(localStorage.getItem('la-studio-autolink') !== '0');
+  const _savedPlaces = parseInt(localStorage.getItem('la-studio-decimal-places') || '4', 10);
+  state.decimalPlaces = (isNaN(_savedPlaces) ? 4 : Math.min(10, Math.max(3, _savedPlaces)));
+  els.decimalSlider.value = state.decimalPlaces;
+  els.decimalSliderVal.textContent = state.decimalPlaces;
+  applyDecimalToggle(localStorage.getItem('la-studio-decimals') === '1');
 
   // 21. Undo/redo buttons
   els.undoBtn.addEventListener('click', performUndo);

@@ -1292,3 +1292,55 @@ mjx-container { max-width: 100%; }
   pointer-events: none;
 }
 .toggle-switch[aria-checked="true"] .toggle-thumb { transform: translateX(16px); }
+
+/* ── Settings slider ────────────────────────────────────────────────────── */
+.settings-row-indent {
+  padding-left: 1.5rem;
+  background: var(--surface-2);
+  align-items: center;
+}
+.settings-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+.settings-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 88px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-bright);
+  outline: none;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+.settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.22);
+}
+.settings-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.22);
+}
+.settings-slider-val {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--mono);
+  min-width: 14px;
+  text-align: right;
+}
