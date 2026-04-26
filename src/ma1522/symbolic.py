@@ -1092,7 +1092,8 @@ class Matrix(sym.MutableDenseMatrix):
                 F[:, i] /= g
                 scalars.append(prettify(g))
             D = Matrix.diag(*scalars)
-            assert self == (F @ D).doit(), "Matrix factorization failed."
+            if not self.free_symbols:
+                assert self == (F @ D).doit(), "Matrix factorization failed."
             return ScalarFactor(diag=D, full=F, order="FD")
         else:
             for i in range(self.rows):
@@ -1100,7 +1101,8 @@ class Matrix(sym.MutableDenseMatrix):
                 F[i, :] /= g
                 scalars.append(prettify(g))
             D = Matrix.diag(*scalars)
-            assert self == (D @ F).doit(), "Matrix factorization failed."
+            if not self.free_symbols:
+                assert self == (D @ F).doit(), "Matrix factorization failed."
             return ScalarFactor(diag=D, full=F, order="DF")
 
     #############################

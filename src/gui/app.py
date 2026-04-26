@@ -286,7 +286,8 @@ async def process_matrix(request: Request):
             elif operation == "gram_schmidt":
                 gs_result, steps_raw = capture(lambda: A.gram_schmidt(verbosity=1))
                 result = f"\\[ {sym.latex(gs_result)} \\]"
-                raw = matrix_to_raw(gs_result)
+                gs_mat = gs_result.eval() if not hasattr(gs_result, 'rows') else gs_result
+                raw = matrix_to_raw(gs_mat)
 
             elif operation == "svd":
                 res = A.singular_value_decomposition(verbosity=0)
