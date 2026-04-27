@@ -3627,7 +3627,26 @@ class Matrix(sym.MutableDenseMatrix):
                     display(expr.nullspace())
                 print("\n")
 
-        P, D = super().diagonalize(reals_only, *args, **kwargs)
+        try:
+            P, D = super().diagonalize(reals_only, *args, **kwargs)
+        except Exception:
+            # Fallback: reals_only=True uses val.is_real, which is None for irrational
+            # eigenvalues represented symbolically — so they get filtered out and the
+            # matrix appears non-diagonalizable. Re-run with a looser real check.
+            eig_data = self.eigenvects()
+            cols_P: list = []
+            diag_vals: list = []
+            for val, _mult, vecs in eig_data:
+                if reals_only and val.is_real is False:
+                    continue
+                for v in vecs:
+                    cols_P.append(v)
+                    diag_vals.append(val)
+            if len(cols_P) != self.rows:
+                from sympy.matrices.exceptions import MatrixError as _ME
+                raise _ME("Matrix is not diagonalizable")
+            P = Matrix(sym.Matrix.hstack(*cols_P))
+            D = Matrix(sym.diag(*diag_vals))
         P.rm_aug_line()  # Remove augmented line if exists
         return PDP(P, D)
 
@@ -3860,88 +3879,61 @@ class Matrix(sym.MutableDenseMatrix):
             - SymPy's [`Matrix.singular_value_decomposition`][sympy.matrices.matrixbase.MatrixBase.singular_value_decomposition]
         """
 
+        AT_A = self.T @ self
         if verbosity >= 1:
-            AT_A = self.T @ self
             print("A^T A")
             display(AT_A)
-            P, D = AT_A.orthogonally_diagonalize(verbosity=verbosity)
-            # Reverse index such that singular values are in decreasing order
-            sigma = [sym.sqrt(val) for val in D.diagonal()][::-1]
-            S = Matrix.diag(*[singular for singular in sigma if (singular != 0)])
-            V = P.select_cols(*[i for i in range(P.cols)][::-1])
+        P, D = AT_A.orthogonally_diagonalize(verbosity=verbosity)
+        # Reverse index such that singular values are in decreasing order
+        sigma = [sym.sqrt(val) for val in D.diagonal()][::-1]
+        S = Matrix.diag(*[singular for singular in sigma if (singular != 0)])
+        V = P.select_cols(*[i for i in range(P.cols)][::-1])
 
-            u_list = []
-            for idx, vec, val in zip(range(1, S.rows + 1), V.columnspace(), sigma):
-                if val != 0:
-                    u_i = self @ vec / val
-                    u_list.append(u_i)
+        u_list = []
+        for idx, vec, val in zip(range(1, S.rows + 1), V.columnspace(), sigma):
+            if val != 0:
+                u_i = self @ vec / val
+                u_list.append(u_i)
+                if verbosity >= 1:
                     display(
                         f"u_{idx} = (1/{sym.latex(val)})A{sym.latex(vec)} = {sym.latex(u_i)}",
                         opt="math",
                     )
 
-            U = Matrix.from_list(u_list)
-            # Extend basis using orthogonal complement and gram-schmidt if insufficient vectors
-            if U.cols < self.rows:
+        U = Matrix.from_list(u_list)
+        # Extend basis using orthogonal complement and gram-schmidt if insufficient vectors
+        if U.cols < self.rows:
+            if verbosity >= 1:
                 print("\nExtending U with its orthogonal complement.")
-                if U.cols == 0:
-                    # Pad edge case with identity
-                    orth = Matrix.eye(self.rows)
+            if U.cols == 0:
+                # Pad edge case with identity
+                orth = Matrix.eye(self.rows)
+            else:
+                complement = U.orthogonal_complement(verbosity=verbosity)
+                gram_result = complement.gram_schmidt(
+                    factor=True, verbosity=verbosity
+                )
+                if isinstance(gram_result, ScalarFactor):
+                    orth = gram_result.full
                 else:
-                    complement = U.orthogonal_complement(verbosity=verbosity)
-                    gram_result = complement.gram_schmidt(
-                        factor=True, verbosity=verbosity
-                    )
-                    if isinstance(gram_result, ScalarFactor):
-                        orth = gram_result.full
-                    else:
-                        orth = gram_result
+                    orth = gram_result
 
-                    orth = orth.normalized(factor=False)
-                    assert isinstance(orth, Matrix), (
-                        f"Expected orth to be a Matrix, got {type(orth)}"
-                    )
-                U = U.row_join(orth, aug_line=False)
-
-            # Add zero rows and columns to S so that matrix multiplication is defined
-            m, n = self.shape
-            r, c = S.shape
-            S = S.row_join(sym.zeros(r, n - c), aug_line=False).col_join(
-                sym.zeros(m - r, n)
-            )
-
-            if verify:
-                assert (U @ S @ V.T - self).norm() == 0
-            return SVD(U, S, V)
-
-        m, n = self.shape
-        U, S, V = super().singular_value_decomposition()
-        # Reverse index such that singular values are in decreasing order
-        new_S = Matrix.diag(*S.diagonal()[::-1])
-
-        S_index = [i for i in range(S.cols)][::-1]
-        new_U = Matrix(U).select_cols(*S_index)
-        new_V = Matrix(V).select_cols(*S_index)
-
-        # new_U = Matrix(U).
-        # Add orthonormal columns to U and V so that they are square matrices
-        new_U = new_U.QRdecomposition(full=True).Q
-        new_V = new_V.QRdecomposition(full=True).Q
+                orth = orth.normalized(factor=False)
+                assert isinstance(orth, Matrix), (
+                    f"Expected orth to be a Matrix, got {type(orth)}"
+                )
+            U = U.row_join(orth, aug_line=False)
 
         # Add zero rows and columns to S so that matrix multiplication is defined
-        r, c = new_S.shape
-        new_S = new_S.row_join(sym.zeros(r, n - c), aug_line=False).col_join(
+        m, n = self.shape
+        r, c = S.shape
+        S = S.row_join(sym.zeros(r, n - c), aug_line=False).col_join(
             sym.zeros(m - r, n)
         )
 
-        if verify and (residues := (new_U @ new_S @ new_V.T - self).norm()) > tol:
-            res = residues.evalf()
-            warn(
-                f"Verification failed: norm of residual is {res} > {tol}",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-        return SVD(new_U, new_S, new_V)
+        if verify:
+            assert (U @ S @ V.T - self).norm() == 0
+        return SVD(U, S, V)
 
     def fast_svd(
         self,
