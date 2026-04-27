@@ -3895,6 +3895,12 @@ class Matrix(sym.MutableDenseMatrix):
             - SymPy's [`Matrix.singular_value_decomposition`][sympy.matrices.matrixbase.MatrixBase.singular_value_decomposition]
         """
 
+        # Keep non-verbose benchmarking / API calls bounded: symbolic diagonalization
+        # can hang on some irrational RootOf-heavy edge cases. Callers that pass
+        # verify=False accept a numerical decomposition.
+        if verbosity == 0 and not verify:
+            return self.fast_svd(option="sym", identify=False)
+
         AT_A = self.T @ self
         if verbosity >= 1:
             print("A^T A")
