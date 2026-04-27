@@ -323,9 +323,43 @@ async def process_matrix(request: Request):
                 raw = str(d)
 
             elif operation == "inv":
-                res, steps_raw = capture(lambda: A.inverse(option="right", verbosity=1))
-                result = f"\\( A^{{-1}} = {sym.latex(res)} \\)"
-                raw = matrix_to_raw(res)
+                rank = A.rank()
+                full_col = rank == A.cols
+                full_row = rank == A.rows
+                parts = []
+                raw_parts = []
+                if full_col and full_row:
+                    # square full-rank: one inverse, works on both sides
+                    res, steps_raw = capture(lambda: A.inverse(option="both", verbosity=1))
+                    parts.append(
+                        f"\\( A^{{-1}} = {sym.latex(res)} \\)"
+                        f"<br><small>Left and right inverse are the same.</small>"
+                    )
+                    raw_parts.append(f"inverse={matrix_to_raw(res)}")
+                else:
+                    steps_raw = ""
+                    if full_col:
+                        left_res, lsteps = capture(lambda: A.inverse(option="left", verbosity=1))
+                        steps_raw += lsteps
+                        parts.append(
+                            f"\\( A_L^{{-1}} = {sym.latex(left_res)} \\)"
+                            f"<br><small>Left inverse exists (full column rank).</small>"
+                        )
+                        raw_parts.append(f"left_inverse={matrix_to_raw(left_res)}")
+                    else:
+                        parts.append("<small>Left inverse does not exist (not full column rank).</small>")
+                    if full_row:
+                        right_res, rsteps = capture(lambda: A.inverse(option="right", verbosity=1))
+                        steps_raw += rsteps
+                        parts.append(
+                            f"\\( A_R^{{-1}} = {sym.latex(right_res)} \\)"
+                            f"<br><small>Right inverse exists (full row rank).</small>"
+                        )
+                        raw_parts.append(f"right_inverse={matrix_to_raw(right_res)}")
+                    else:
+                        parts.append("<small>Right inverse does not exist (not full row rank).</small>")
+                result = "<br>".join(parts)
+                raw = "\n".join(raw_parts) if raw_parts else "No inverse exists."
 
             elif operation == "rank":
                 with warnings.catch_warnings():

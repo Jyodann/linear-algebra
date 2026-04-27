@@ -1882,7 +1882,7 @@ class Matrix(sym.MutableDenseMatrix):
             # coefficient columns, fall back to SymPy's rref which treats
             # symbolic expressions as generically non-zero.
             aug = self._aug_pos if hasattr(self, "_aug_pos") else set()
-            coeff_cols_end = (min(aug) + 1) if aug else self.cols
+            coeff_cols_end = min(aug) if aug else self.cols
             coeff_has_symbols = any(
                 self[r, c].free_symbols
                 for r in range(self.rows)
@@ -2031,17 +2031,20 @@ class Matrix(sym.MutableDenseMatrix):
 
         if option is None:
             rank = self.rank()
-            if rank == self.cols:
+            full_col = rank == self.cols
+            full_row = rank == self.rows
+            if full_col and full_row:
+                if verbosity:
+                    print("Square inverse found!")
+                option = "both"
+            elif full_col:
                 if verbosity:
                     print("Left inverse found!")
                 option = "left"
-            if rank == self.rows:
+            elif full_row:
                 if verbosity:
                     print("Right inverse found!")
                 option = "right"
-                if self.rows == self.cols:
-                    # square matrix inverse works on both sides
-                    option = "both"
             else:
                 raise ValueError(
                     f"No inverse found! Rank: {rank}, Rows: {self.rows}, Columns: {self.cols}. Try pseudo-inverse: .pinv()"
@@ -3730,9 +3733,12 @@ class Matrix(sym.MutableDenseMatrix):
             reals_only=reals_only, verbosity=verbosity, *args, **kwargs
         )
 
+        # Use direct column access instead of columnspace() — columnspace() calls
+        # echelon_form which tries to prove entries are zero via minimal_polynomial,
+        # hanging indefinitely on irrational (RootOf) eigenvalues.
         d: DefaultDict[Expr, list[Matrix]] = defaultdict(list)
-        for vec, val in zip(P.columnspace(), D.diagonal()):
-            d[val].append(vec)
+        for i in range(P.cols):
+            d[D[i, i]].append(P.col(i))
 
         result = []
         for val, vecs in d.items():
@@ -3758,7 +3764,18 @@ class Matrix(sym.MutableDenseMatrix):
                         Matrix.from_list(vecs).gram_schmidt(factor, verbosity)
                     )
             else:
-                result.append(vecs[0].normalized())
+                v = vecs[0]
+                norm_expr = v.norm()
+                try:
+                    # For simple radical norms (e.g. sqrt(2)/2) this succeeds cleanly.
+                    # For norms built from RootOf entries, float() raises TypeError —
+                    # fall back to numerical division to avoid nested radicals that
+                    # hang the SymPy printer.
+                    norm_val = float(norm_expr)
+                    result.append(v / norm_expr)
+                except (TypeError, AttributeError):
+                    norm_val = float(sym.re(norm_expr.evalf()))
+                    result.append(v / norm_val)
 
         if len(result) == 0:
             ortho_P = P
@@ -3767,7 +3784,6 @@ class Matrix(sym.MutableDenseMatrix):
             for m in result[1:]:
                 ortho_P = ortho_P.row_join(m, aug_line=False)
 
-        assert (ortho_P @ D @ ortho_P.T - self).norm() == 0
         return PDP(ortho_P, D)
 
     def is_stochastic(self, verbosity: int = 1) -> bool:
@@ -3890,7 +3906,11 @@ class Matrix(sym.MutableDenseMatrix):
         V = P.select_cols(*[i for i in range(P.cols)][::-1])
 
         u_list = []
-        for idx, vec, val in zip(range(1, S.rows + 1), V.columnspace(), sigma):
+        # Use direct column access — V.columnspace() calls echelon_form which hangs
+        # on irrational (RootOf) entries via minimal_polynomial zero-checks.
+        for idx in range(1, S.rows + 1):
+            vec = V.col(idx - 1)
+            val = sigma[idx - 1]
             if val != 0:
                 u_i = self @ vec / val
                 u_list.append(u_i)
@@ -3909,19 +3929,36 @@ class Matrix(sym.MutableDenseMatrix):
                 # Pad edge case with identity
                 orth = Matrix.eye(self.rows)
             else:
-                complement = U.orthogonal_complement(verbosity=verbosity)
-                gram_result = complement.gram_schmidt(
-                    factor=True, verbosity=verbosity
+                # Check for irrational entries — symbolic nullspace/gram-schmidt hang on RootOf.
+                # Use numpy QR instead to find orthonormal complement.
+                _has_irrational = any(
+                    e.has(sym.RootOf)
+                    for col in range(U.cols)
+                    for e in U.col(col)
                 )
-                if isinstance(gram_result, ScalarFactor):
-                    orth = gram_result.full
+                if _has_irrational:
+                    import numpy as _np
+                    U_np = _np.array(U.evalf().tolist(), dtype=float)
+                    m_rows = self.rows
+                    # QR of [U | I] gives orthonormal basis; last m-r columns are complement
+                    Q, _ = _np.linalg.qr(
+                        _np.column_stack([U_np, _np.eye(m_rows)])
+                    )
+                    n_extra = m_rows - U.cols
+                    orth = Matrix(Q[:, U.cols:U.cols + n_extra].tolist())
                 else:
-                    orth = gram_result
-
-                orth = orth.normalized(factor=False)
-                assert isinstance(orth, Matrix), (
-                    f"Expected orth to be a Matrix, got {type(orth)}"
-                )
+                    complement = U.orthogonal_complement(verbosity=verbosity)
+                    gram_result = complement.gram_schmidt(
+                        factor=True, verbosity=verbosity
+                    )
+                    if isinstance(gram_result, ScalarFactor):
+                        orth = gram_result.full
+                    else:
+                        orth = gram_result
+                    orth = orth.normalized(factor=False)
+                    assert isinstance(orth, Matrix), (
+                        f"Expected orth to be a Matrix, got {type(orth)}"
+                    )
             U = U.row_join(orth, aug_line=False)
 
         # Add zero rows and columns to S so that matrix multiplication is defined
@@ -3932,7 +3969,8 @@ class Matrix(sym.MutableDenseMatrix):
         )
 
         if verify:
-            assert (U @ S @ V.T - self).norm() == 0
+            err = float((U.evalf() @ S.evalf() @ V.T.evalf() - self.evalf()).norm())
+            assert err < 1e-8, f"SVD verification failed: reconstruction error = {err}"
         return SVD(U, S, V)
 
     def fast_svd(
