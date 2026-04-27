@@ -491,15 +491,32 @@
       </div>
 
       <div class="help-section">
+        <div class="help-section-title">Symbolic Variables</div>
+        <p class="help-note">Use any letter as a variable — in both grid cells and text mode:</p>
+        <table class="help-table">
+          <thead><tr><th>You type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>x</code>, <code>a</code>, <code>t</code></td><td>Symbolic variable</td></tr>
+            <tr><td><code>2x</code></td><td>2 × x (implicit multiplication)</td></tr>
+            <tr><td><code>(5/2)x</code></td><td>⁵⁄₂ × x</td></tr>
+            <tr><td><code>3x + 2y</code></td><td>Linear combination</td></tr>
+            <tr><td><code>x^2</code> or <code>x**2</code></td><td>x squared</td></tr>
+            <tr><td><code>2a - 1</code></td><td>Affine expression in a</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="help-section">
         <div class="help-section-title">Text / LaTeX Mode Formats</div>
         <p class="help-note">Switch any matrix to text mode using the toggle below the grid:</p>
         <table class="help-table">
           <thead><tr><th>Format</th><th>Example</th></tr></thead>
           <tbody>
             <tr><td>Space-separated</td><td><code>[1 2; 3 4]</code></td></tr>
+            <tr><td>With variables</td><td><code>[2x 3y; x -y]</code></td></tr>
             <tr>
-              <td>Comma-separated<br><span class="help-note-inline">(use when cells have spaces)</span></td>
-              <td><code>[1, -1 + sqrt(5); 3, 4]</code></td>
+              <td>Comma-separated<br><span class="help-note-inline">(use for expressions with spaces)</span></td>
+              <td><code>[2x - 1, 3y + 2; 0, 1]</code></td>
             </tr>
             <tr><td>Python list</td><td><code>[[1, sqrt(5)], [3, 4]]</code></td></tr>
             <tr><td>LaTeX matrix</td><td><code>\<wbr>begin{pmatrix} 1 &amp; 2 \<wbr>\<wbr> 3 &amp; 4 \<wbr>end{pmatrix}</code></td></tr>

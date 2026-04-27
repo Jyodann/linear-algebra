@@ -5,6 +5,14 @@ import traceback
 import warnings
 import ast
 from concurrent.futures import ThreadPoolExecutor
+from sympy.parsing.sympy_parser import (
+    parse_expr,
+    standard_transformations,
+    implicit_multiplication_application,
+    convert_xor,
+)
+
+_TRANSFORMATIONS = standard_transformations + (implicit_multiplication_application, convert_xor)
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -34,9 +42,14 @@ def _parse_bracket_format(s: str) -> Matrix:
         if not row_str:
             continue
         if ',' in row_str:
-            cells = [sym.sympify(c.strip()) for c in row_str.split(',')]
+            cells = [parse_expr(c.strip(), transformations=_TRANSFORMATIONS) for c in row_str.split(',')]
         else:
-            cells = [sym.sympify(c) for c in row_str.split()]
+            parts = row_str.split()
+            try:
+                cells = [parse_expr(c, transformations=_TRANSFORMATIONS) for c in parts]
+            except Exception:
+                # Expression contains spaces (e.g. "(1/3)x + 2") — treat whole row as one cell.
+                cells = [parse_expr(row_str, transformations=_TRANSFORMATIONS)]
         rows.append(cells)
     if not rows:
         raise ValueError("Empty matrix")

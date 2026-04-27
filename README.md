@@ -98,6 +98,27 @@ Decimal inputs are accepted and converted to exact fractions automatically:
 0.5 1.5; 2.5 3.5
 ```
 
+**Symbolic variables** are supported in both the grid and text mode. Implicit multiplication is handled automatically:
+
+| Input | Interpreted as |
+|-------|---------------|
+| `x`, `a`, `t` | Symbolic variable |
+| `2x` | 2 × x |
+| `(5/2)x` | ⁵⁄₂ × x |
+| `3x + 2y` | Linear combination |
+| `x^2` or `x**2` | x² |
+| `2a - 1` | Affine expression |
+
+**Text mode** (toggled below any matrix grid) accepts several formats:
+
+| Format | Example |
+|--------|---------|
+| Space-separated | `[1 2; 3 4]` |
+| With variables | `[2x 3y; x -y]` |
+| Comma-separated *(use when cells contain spaces)* | `[2x - 1, 3y + 2; 0, 1]` |
+| Python list | `[[1, sqrt(5)], [3, 4]]` |
+| LaTeX | `\begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}` |
+
 ### Selecting an operation
 
 Click any operation button (e.g. **REF**, **Eigenvalues**, **Diagonalize**) to compute. Results appear below with optional step-by-step working where available.
