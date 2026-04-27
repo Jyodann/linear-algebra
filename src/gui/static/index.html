@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=11">
+  <link rel="stylesheet" href="/static/style.css?v=12">
   <script>
     window.MathJax = {
       tex: {
@@ -95,6 +95,10 @@
             <span class="dim-sep">×</span>
             <input type="number" id="colsB" value="1" min="1" max="10" aria-label="Cols B">
             <button class="btn-sm" id="updateB">Set</button>
+          </div>
+          <div class="dim-controls hidden" id="markovKWrap">
+            <span class="dim-sep">k =</span>
+            <input type="number" id="markovKInput" value="2" min="1" max="1000" aria-label="Steps k">
           </div>
         </div>
         <div id="gridB" class="matrix-grid"></div>
@@ -286,6 +290,20 @@
             <div class="group-btns">
               <button class="op-btn steps-badge" data-op="eval_cases" data-needs="rhs-optional">Evaluate Cases</button>
               <button class="op-btn" data-op="find_cases" data-needs="">Find Cases</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Markov Chains -->
+        <div class="op-group" data-color="var(--sky)">
+          <button class="group-header" type="button" aria-expanded="false">
+            <span class="group-label">Markov Chains</span>
+            <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="group-body">
+            <div class="group-btns">
+              <button class="op-btn" data-op="markov_steady" data-needs="">Steady State</button>
+              <button class="op-btn" data-op="markov_kstep" data-needs="rhs">k-Step Distribution</button>
             </div>
           </div>
         </div>
@@ -538,6 +556,6 @@
     </div>
   </div>
 
-  <script src="/static/script.js?v=11"></script>
+  <script src="/static/script.js?v=12"></script>
 </body>
 </html>

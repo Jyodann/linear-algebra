@@ -32,6 +32,8 @@ const OP_LABELS = {
   eval_cases:       'Evaluate Cases',
   find_cases:       'Find Cases',
   chain_multiply:   'Chain Multiply',
+  markov_steady:    'Steady State',
+  markov_kstep:     'k-Step Distribution',
 };
 
 /* ── Status badge config ────────────────────────────────────────────────── */
@@ -66,6 +68,7 @@ const state = {
     modC: { T: false, inv: false },
     showM3: false,
   },
+  markovK: 2,
 };
 
 /* ── Undo / Redo ────────────────────────────────────────────────────────── */
@@ -210,6 +213,8 @@ const els = {
   opSearch:        $('opSearch'),
   opSearchClear:   $('opSearchClear'),
   opSearchEmpty:   $('opSearchEmpty'),
+  markovKWrap:     $('markovKWrap'),
+  markovKInput:    $('markovKInput'),
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -585,7 +590,8 @@ async function applyDimB() {
  * Only fires when state.autoLinkSize is true and the constrained dim differs.
  */
 function applyAutoLink(source) {
-  if (!state.autoLinkSize) return;
+  // A→B always enforced; B→A only when autoLinkSize is on
+  if (source !== 'A' && !state.autoLinkSize) return;
   const mode = state.secondaryMode;
   if (!mode) return;
 
@@ -771,6 +777,7 @@ function selectOp(op, needs) {
   state.activeNeeds = needs || null;
   els.opLabel.textContent = OP_LABELS[op] || op;
   showSecondary(needs || null);
+  els.markovKWrap.classList.toggle('hidden', op !== 'markov_kstep');
   els.computeBtn.disabled = false;
   els.computeBtn.title = `Run ${OP_LABELS[op] || op}`;
   saveSession();
@@ -823,6 +830,10 @@ async function runOperation() {
     body.mod1 = getChainMod(els.modSegA);
     body.mod2 = getChainMod(els.modSegB);
     body.mod3 = getChainMod(els.modSegC);
+  }
+
+  if (op === 'markov_kstep') {
+    body.k = parseInt(els.markovKInput.value, 10) || 2;
   }
 
   const controller = new AbortController();
@@ -1107,6 +1118,7 @@ function saveSession() {
       activeOp: state.activeOp,
       activeNeeds: state.activeNeeds,
       secondaryMode: state.secondaryMode,
+      markovK: state.markovK,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(data));
   } catch { /* quota exceeded — silently ignore */ }
@@ -1148,6 +1160,11 @@ async function restoreSession() {
       } else {
         createGrid('gridB', data.rowsB, data.colsB);
       }
+    }
+
+    if (data.markovK) {
+      state.markovK = data.markovK;
+      els.markovKInput.value = data.markovK;
     }
 
     // Restore Matrix C (chain multiply M3)
@@ -1324,6 +1341,10 @@ function init() {
   els.updateB.addEventListener('click', applyDimB);
   els.rowsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
   els.colsB.addEventListener('keydown', e => e.key === 'Enter' && applyDimB());
+  els.markovKInput.addEventListener('change', () => {
+    state.markovK = parseInt(els.markovKInput.value, 10) || 2;
+    saveSession();
+  });
 
   // 7. Chain multiply segment controls
   [els.modSegA, els.modSegB, els.modSegC].forEach(seg => {

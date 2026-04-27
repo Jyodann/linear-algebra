@@ -245,7 +245,10 @@ async def process_matrix(request: Request):
         a_label = "M_1" if is_chain else "A"
         input_parts = [f"{a_label} = {sym.latex(A)}"]
         if b is not None:
-            input_parts.append(f"b = {sym.latex(b)}")
+            b_label = "x_0" if operation == "markov_kstep" else "b"
+            input_parts.append(f"{b_label} = {sym.latex(b)}")
+        if operation == "markov_kstep":
+            input_parts.append(f"k = {data.get('k', 2)}")
         if B is not None:
             b_label = "M_2" if is_chain else "B"
             input_parts.append(f"{b_label} = {sym.latex(B)}")
@@ -553,6 +556,28 @@ async def process_matrix(request: Request):
 
                 result = f"\\[ {sym.latex(result_mat)} \\]"
                 raw = matrix_to_raw(result_mat)
+
+            # ------------------------------------------------------------------
+            # Markov Chains
+            # ------------------------------------------------------------------
+            elif operation == "markov_steady":
+                eq = A.equilibrium_vectors()
+                result = f"\\[ \\pi = {sym.latex(eq)} \\]"
+                raw = matrix_to_raw(eq)
+
+            elif operation == "markov_kstep":
+                if b is None:
+                    return None, None, None, "Initial state vector x₀ is required"
+                k = int(data.get("k", 2))
+                if k < 1:
+                    return None, None, None, "k must be a positive integer"
+                Ak = A ** k
+                dist = Ak * b
+                result = (
+                    f"\\[ x_{{{k}}} = {sym.latex(dist)} \\]"
+                    f"\\[ A^{{{k}}} = {sym.latex(Ak)} \\]"
+                )
+                raw = f"x_{k}={matrix_to_raw(dist)}\nA^{k}={matrix_to_raw(Ak)}"
 
             else:
                 return None, None, None, f"Unknown operation: {operation}"
