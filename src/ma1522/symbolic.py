@@ -13,8 +13,6 @@ import mpmath as mp
 from latex2sympy2 import latex2sympy
 import re
 
-# import IPython.display
-
 from .utils import _powerset, _is_zero, _standardise_symbol, _textify, display
 
 from .custom_types import (
@@ -1037,7 +1035,7 @@ class Matrix(sym.MutableDenseMatrix):
         syms = self.free_symbols
         res: dict[Expr, Matrix] = defaultdict(Matrix)
         for s in syms:
-            sub = dict(((symbol, 0) for symbol in syms if symbol != sym))
+            sub = {symbol: 0 for symbol in syms if symbol != s}
             sub[s] = 1  # type: ignore
             res[s] = self.subs(sub)
         return res

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, NamedTuple
 from sympy.printing.latex import LatexPrinter
 
 from .utils import _gen_latex_repr
-# from ma1522 import utils
 
 if TYPE_CHECKING:
     from typing import Literal
