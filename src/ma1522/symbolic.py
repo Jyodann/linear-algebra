@@ -1920,7 +1920,15 @@ class Matrix(sym.MutableDenseMatrix):
                 for r in range(self.rows)
                 for c in range(coeff_cols_end)
             )
-            if coeff_has_symbols:
+            coeff_has_numeric_pivot = any(
+                (not self[r, c].free_symbols) and self[r, c] != 0
+                for r in range(self.rows)
+                for c in range(coeff_cols_end)
+            )
+            if coeff_has_symbols or not coeff_has_numeric_pivot:
+                # Symbols in coefficient columns, or coefficient block is
+                # degenerate (zero/all-symbolic) — treat all symbolic entries
+                # as generically non-zero via SymPy's standard rref.
                 warn(
                     "Matrix contains free symbols in coefficient columns. "
                     "Result is valid for generic parameter values; special cases "
