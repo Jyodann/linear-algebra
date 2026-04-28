@@ -1,4 +1,4 @@
-from .utils import display
+from .utils import display, sympy_commands
 
 from .custom_types import (
     Shape,
@@ -6,6 +6,7 @@ from .custom_types import (
     ScalarFactor,
     PLU,
     RREF,
+    RREFCase,
     VecDecomp,
     QR,
     PDP,
@@ -22,10 +23,12 @@ __all__ = [
     "ScalarFactor",
     "PLU",
     "RREF",
+    "RREFCase",
     "VecDecomp",
     "QR",
     "PDP",
     "SVD",
     "NumSVD",
     "Matrix",
+    "sympy_commands",
 ]

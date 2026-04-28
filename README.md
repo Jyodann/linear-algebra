@@ -48,10 +48,10 @@ This installs:
 - `fastapi`, `uvicorn`, `python-multipart` — web server
 - `pytest`, `pytest-cov`, `httpx`, `ruff` — development tools
 
-In addition, run this to also install the ma1522 package: 
-- `ma1522` — the local symbolic linear algebra package (editable install)
-```bash
-uv pip install .
+A quick reference guide is also available as a function in the library:
+```python
+from ma1522 import sympy_commands
+sympy_commands()
 ```
 
 ### 3. Verify the install
