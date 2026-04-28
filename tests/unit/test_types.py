@@ -2,17 +2,18 @@
 
 Covers:
 - Shape enum values
-- PartGen, ScalarFactor, PLU, RREF, VecDecomp, QR, PDP, SVD, NumSVD
-- _powerset and _is_zero utility functions
+- PartGen, ScalarFactor, PLU, RREF, VecDecomp, QR, PDP, SVD, NumSVD, RREFCase
+- _powerset, _is_zero, _textify, _wrap_latex, _standardise_symbol utility functions
 """
 
 import numpy as np
 import pytest
 import sympy as sym
+from unittest.mock import patch, MagicMock
 
-from ma1522 import Matrix, PartGen, ScalarFactor, PLU, RREF, VecDecomp, QR, PDP, SVD, NumSVD
+from ma1522 import Matrix, PartGen, ScalarFactor, PLU, RREF, VecDecomp, QR, PDP, SVD, NumSVD, RREFCase
 from ma1522.custom_types import Shape
-from ma1522.utils import _powerset, _is_zero
+from ma1522.utils import _powerset, _is_zero, _textify, _wrap_latex, _unwrap_latex, _standardise_symbol
 
 
 # ---------------------------------------------------------------------------
@@ -453,3 +454,101 @@ class TestIsZero:
         # A free symbol can be zero (no assumption)
         a = sym.Symbol("a")
         assert _is_zero(a) is True
+
+
+# ---------------------------------------------------------------------------
+# RREFCase
+# ---------------------------------------------------------------------------
+
+class TestRREFCase:
+    def test_construction_and_fields(self):
+        rc = RREFCase(
+            conditions={"a": 0},
+            excluded=[{"b": 0}],
+            rref=Matrix.eye(2),
+            pivots=(0, 1),
+            free_params=0,
+            is_consistent=True,
+        )
+        assert rc.eval() == Matrix.eye(2)
+        assert "RREFCase" in rc._latex()
+
+    def test_consistency_flag(self):
+        rc = RREFCase(
+            conditions={},
+            excluded=[],
+            rref=Matrix([[1, 0, 0], [0, 1, 0]]),
+            pivots=(0, 1),
+            free_params=0,
+            is_consistent=True,
+        )
+        assert rc.is_consistent is True
+
+    def test_free_params(self):
+        rc = RREFCase(
+            conditions={},
+            excluded=[],
+            rref=Matrix([[1, 0, 0], [0, 0, 0]]),
+            pivots=(0,),
+            free_params=1,
+            is_consistent=True,
+        )
+        assert rc.free_params == 1
+
+
+# ---------------------------------------------------------------------------
+# Utils — _textify, _wrap_latex, _standardise_symbol
+# ---------------------------------------------------------------------------
+
+class TestTextify:
+    def test_underscore_escaping(self):
+        assert _textify("hello_world") == r"\text{hello\_world}"
+
+    def test_no_underscore(self):
+        assert _textify("Simple") == r"\text{Simple}"
+
+
+class TestLatexWrapping:
+    def test_wrap(self):
+        assert _wrap_latex("x") == "$x$"
+
+    def test_unwrap_single_dollar(self):
+        assert _unwrap_latex("$x$") == "x"
+
+    def test_unwrap_double_dollar(self):
+        assert _unwrap_latex("$$x$$") == "x"
+
+    def test_unwrap_none(self):
+        assert _unwrap_latex(None) == ""
+
+
+class TestStandardiseSymbol:
+    def test_subscript_digits(self):
+        symbols = {sym.Symbol("x1"), sym.Symbol("y2")}
+        std = _standardise_symbol(symbols)
+        std_names = [str(s) for s in std]
+        assert "x_1" in std_names
+        assert "y_2" in std_names
+
+
+class TestIPythonUtils:
+    def test_is_ipython_false_on_name_error(self):
+        from ma1522.utils import _is_IPython
+        with patch("IPython.core.getipython.get_ipython", side_effect=NameError):
+            assert _is_IPython() is False
+
+    def test_is_ipython_true_for_zmq_shell(self):
+        from ma1522.utils import _is_IPython
+        with patch("IPython.core.getipython.get_ipython") as mock_get:
+            mock_shell = MagicMock()
+            mock_shell.__class__.__name__ = "ZMQInteractiveShell"
+            mock_get.return_value = mock_shell
+            assert _is_IPython() is True
+
+    def test_is_ipython_false_for_unknown_shell(self):
+        from ma1522.utils import _is_IPython
+        with patch("IPython.core.getipython.get_ipython") as mock_get:
+            mock_shell = MagicMock()
+            mock_shell.__class__.__name__ = "SomeOtherShell"
+            mock_get.return_value = mock_shell
+            assert _is_IPython() is False
