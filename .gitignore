@@ -1,23 +1,179 @@
-# Python-generated files
+# ============================================================
+# Python
+# ============================================================
 __pycache__/
-*.py[oc]
-build/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
 dist/
+build/
 wheels/
-*.egg-info
-.coverage/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+pip-wheel-metadata/
+share/python-wheels/
+MANIFEST
 
-# Virtual environments
-.venv
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
 
-# Generated docs
+# ============================================================
+# Testing & Coverage
+# ============================================================
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+nosetests.xml
+test-results/
+junit*.xml
+
+# ============================================================
+# Virtual Environments
+# ============================================================
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================================
+# Documentation
+# ============================================================
 site/
 .cache/
+docs/_build/
+docs/_static/generated/
 
-# Generated coverage reports
-htmlcov/
-.coverage/
-.coverage
+# ============================================================
+# Packaging / Dependency managers
+# ============================================================
+node_modules/
+.npm/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Git worktrees
+# ============================================================
+# IDE — VS Code
+# ============================================================
+.vscode/
+*.code-workspace
+
+# ============================================================
+# IDE — JetBrains (PyCharm, IntelliJ, WebStorm, etc.)
+# ============================================================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# ============================================================
+# IDE — Vim / Neovim / Emacs
+# ============================================================
+*.swp
+*.swo
+*~
+.#*
+\#*\#
+*.orig
+
+# ============================================================
+# Claude Code / AI tooling
+# ============================================================
+.claude/
+
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.DocumentRevisions-V100
+.apdisk
+
+# ============================================================
+# Windows
+# ============================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ============================================================
+# Linux
+# ============================================================
+.Trash-*/
+.directory
+.nfs*
+
+# ============================================================
+# Environment & Secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+.secrets
+
+# ============================================================
+# Logs & Temp
+# ============================================================
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================================
+# Jupyter
+# ============================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================================
+# Project-specific
+# ============================================================
 .worktrees/
