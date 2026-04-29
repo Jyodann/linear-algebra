@@ -1,3 +1,4 @@
+import html
 import io
 import asyncio
 import contextlib
@@ -173,12 +174,12 @@ def steps_html(raw: str) -> str:
             or stripped == "No solution"
             or stripped.startswith("Solution with")
         ):
-            html_parts.append(f'<div class="step-case">{stripped}</div>')
+            html_parts.append(f'<div class="step-case">{html.escape(stripped)}</div>')
             i += 1
             continue
 
         if stripped:
-            html_parts.append(f'<div class="step-text">{stripped}</div>')
+            html_parts.append(f'<div class="step-text">{html.escape(stripped)}</div>')
         i += 1
 
     return "\n".join(html_parts)
@@ -212,6 +213,8 @@ async def process_matrix(request: Request):
         operation = data.get("operation", "")
 
         # Parse primary matrix
+        if not matrix_str or not matrix_str.strip():
+            return JSONResponse(content={"error": "Matrix input is required"}, status_code=400)
         try:
             A = parse_matrix(matrix_str)
         except Exception as e:
@@ -415,7 +418,7 @@ async def process_matrix(request: Request):
                     warnings.simplefilter("ignore")
                     ns = A.nullspace()
                 if not ns:
-                    result = f"\\( \\mathrm{{Null}}(A) = \\{{0\\}} \\)"
+                    result = "\\( \\mathrm{Null}(A) = \\{0\\} \\)"
                     raw = ""
                 else:
                     vecs = ", ".join(sym.latex(v) for v in ns)
@@ -605,6 +608,8 @@ async def process_matrix(request: Request):
                 k = int(data.get("k", 2))
                 if k < 1:
                     return None, None, None, "k must be a positive integer"
+                if k > 100:
+                    return None, None, None, "k must be ≤ 100"
                 Ak = A ** k
                 dist = Ak * b
                 result = (

@@ -387,8 +387,8 @@ class Matrix(sym.MutableDenseMatrix):
         """
         if not vectors:
             return Matrix([])
-        res = Matrix(vectors.pop(0))
-        for vec in vectors:
+        res = Matrix(vectors[0])
+        for vec in vectors[1:]:
             if row_join:
                 res = res.row_join(vec, aug_line=False)
             else:
@@ -3111,6 +3111,10 @@ class Matrix(sym.MutableDenseMatrix):
         aug = other.copy().row_join(self)
         sub = aug.rref(pivots=True)
         assert isinstance(sub, RREF), "RREF should return a RREF dataclass"
+
+        if not sub.pivots:
+            return True
+
         if verbosity == 1:
             print("Check rref([other | self])")
         if verbosity >= 2:
@@ -3287,7 +3291,7 @@ class Matrix(sym.MutableDenseMatrix):
             display(M)
             print("\nAfter RREF:")
             display(res)
-        P = res[: self.cols, self.cols :]
+        P = res[: to.cols, to.cols :]
         return P  # type: ignore
 
     ###############################################
@@ -3457,7 +3461,7 @@ class Matrix(sym.MutableDenseMatrix):
         if verbosity >= 1:
             print("self^T @ self")
             display(res)
-        return res.is_diagonal and all(entry == 1 for entry in res.diagonal())
+        return res.is_diagonal() and all(entry == 1 for entry in res.diagonal())
 
     def orthogonal_decomposition(self, to: Matrix, verbosity: int = 0) -> VecDecomp:
         """Decomposes the current vector (or matrix) into its orthogonal projection onto a subspace and its orthogonal complement.
@@ -3595,11 +3599,12 @@ class Matrix(sym.MutableDenseMatrix):
         orthogonal_set = [self.select_cols(0)]
         for i in range(1, self.cols):
             u = self.select_cols(i)
+            u_orig = u.copy()
             latex_eq = f"v_{i + 1} = {sym.latex(u)}"
             for _, v in enumerate(orthogonal_set, start=1):
                 if v.norm() != 0:
-                    latex_eq += f"- \\left(\\frac{{{sym.latex(v.dot(u))}}}{{{sym.latex(v.dot(v))}}}\\right) {sym.latex(v)}"
-                    u -= (v.dot(u) / v.dot(v)) * v
+                    latex_eq += f"- \\left(\\frac{{{sym.latex(u_orig.dot(v))}}}{{{sym.latex(v.dot(v))}}}\\right) {sym.latex(v)}"
+                    u -= (u_orig.dot(v) / v.dot(v)) * v
 
             if verbosity >= 1:
                 disp_u = u.copy()
@@ -3670,7 +3675,7 @@ class Matrix(sym.MutableDenseMatrix):
             Q = Matrix(Q)
             Q_aug = Q.row_join(Q.elem(), aug_line=False).QRdecomposition()[0]
             R_aug = Matrix(R.col_join(sym.zeros(Q_aug.cols - R.rows, R.cols)))
-            assert Q_aug @ R_aug == self
+            assert (Q_aug @ R_aug).equals(self), "Full QR decomposition failed: Q_aug @ R_aug != self"
             return QR(Q_aug, R_aug)
         return QR(Q, R)
 
@@ -3736,7 +3741,10 @@ class Matrix(sym.MutableDenseMatrix):
 
         # Custom solve using sympy's solve method
         sol = Matrix.create_unk_matrix(ATb.rows, 1)
-        sol = sol.subs(sym.solve(ATA @ sol - ATb, dict=True)[0])
+        sol_dicts = sym.solve(ATA @ sol - ATb, dict=True)
+        if not sol_dicts:
+            raise ValueError("Normal equations have no solution (system is inconsistent)")
+        sol = sol.subs(sol_dicts[0])
 
         if verbosity >= 1:
             print("Before RREF: [self.T @ self | self.T @ rhs]")
@@ -3837,7 +3845,7 @@ class Matrix(sym.MutableDenseMatrix):
             )
 
         # Get the free symbols from the last column of the matrix
-        ordered_syms = [entry.free_symbols.pop() for entry in self.select_cols(-1)]  # type: ignore
+        ordered_syms = [next(iter(entry.free_symbols)) for entry in self.select_cols(-1)]  # type: ignore
 
         # Create a substitution dictionary mapping symbols to values from vector x
         substitution = {var: val for var, val in zip(ordered_syms, x)}  # type: ignore
@@ -4466,7 +4474,7 @@ class Matrix(sym.MutableDenseMatrix):
                 S = S.identify(tol=tol, suppress_warnings=True)
                 V = V.identify(tol=tol, suppress_warnings=True)
                 residues = (self - U @ S @ V.T).norm()
-                if residues > tol:
+                if residues > (tol or 0.0):
                     res = residues.evalf()
                     warn(
                         f"Non-zero Identification Error: {res}",

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import dataclasses
 from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple
@@ -155,7 +155,7 @@ PRINTER = LatexPrinter()
 
 # Base class that all LaTeX objects should inherit
 @dataclasses.dataclass
-class Printable:
+class Printable(ABC):
     r"""Base class for objects that can be printed as $\rm\LaTeX$."""
 
     def _latex(self, printer=None) -> str:

@@ -189,9 +189,9 @@ def _gen_latex_repr_dict(obj: dict, printer: LatexPrinter | None = None) -> str:
         if hasattr(v, "_latex"):
             # used for overriding printing behaviour in sympy objects
             v_repr = v._latex(printer)
-        elif hasattr(v, "_repr_latex_") and _unwrap_latex(v.__repr__()) != v.__repr__():
+        elif hasattr(v, "_repr_latex_"):
             # used for objects that support IPython printing in latex
-            v_repr = _unwrap_latex(v.__repr__())
+            v_repr = _unwrap_latex(v._repr_latex_())
         else:
             v_repr = _unwrap_latex(v.__repr__())
         list_repr.append(f"{k_repr} = {v_repr}")
@@ -251,15 +251,18 @@ def _is_IPython() -> bool:
     try:
         from IPython.core.getipython import get_ipython
 
-        shell = get_ipython().__class__.__name__
+        ip = get_ipython()
+        if ip is None:
+            return False
+        shell = ip.__class__.__name__
         if shell in ["ZMQInteractiveShell", "TerminalInteractiveShell", "Interpreter"]:
-            return True  # Jupyter notebook, qtconsole or terminal running IPython
+            return True
         else:
-            return False  # Other type
-    except NameError:
-        return False  # Probably standard Python interpreter
+            return False
+    except (NameError, AttributeError):
+        return False
     except ImportError:
-        return False  # IPython module does not exist
+        return False
 
 
 def display(*args, opt: Literal["math", "dict"] | None = None, **kwargs) -> None:
@@ -311,8 +314,7 @@ def display(*args, opt: Literal["math", "dict"] | None = None, **kwargs) -> None
             elif opt == "dict":
                 if isinstance(arg, dict):
                     from sympy.printing.latex import LatexPrinter
-                    printer = kwargs.pop("printer", LatexPrinter())
-                    print(f"\\[{_gen_latex_repr_dict(arg, printer=printer)}\\]")
+                    print(f"\\[{_gen_latex_repr_dict(arg, printer=kwargs.get('printer', LatexPrinter()))}\\]")
             elif isinstance(arg, list):
                 # List of SymPy objects (e.g. nullspace() → list of column vectors)
                 # Render each as a column vector and display inside \[ ... \]
